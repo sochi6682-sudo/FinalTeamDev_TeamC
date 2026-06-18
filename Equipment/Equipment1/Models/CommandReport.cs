@@ -4,6 +4,12 @@ using System.Text;
 
 namespace Equipment1.Models;
 
-internal class CommandReport
+public class CommandReport
 {
+    public string CommandId { get; set; } = "";
+    public int CommandType { get; set; }
+    public string CarrierId { get; set; } = "";
+    public string EqpName { get; set; } = "";
+    public string Location { get; set; } = "";
+    public int CommandStatus { get; set; }
 }

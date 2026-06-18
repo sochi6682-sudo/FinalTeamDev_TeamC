@@ -4,6 +4,7 @@ using System.Text;
 
 namespace Equipment1.Models;
 
-internal class AlarmReport
+public class AlarmReport
 {
+    public string EqpName { get; set; } = "EQP01";
 }

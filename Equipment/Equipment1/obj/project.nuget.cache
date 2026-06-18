@@ -1,10 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "S9VEkJLFqM4=",
+  "dgSpecHash": "to3VxUaHB08=",
   "success": true,
-  "projectFilePath": "C:\\Users\\khosotani\\source\\repos\\Equipment\\Equipment1\\Equipment1.csproj",
+  "projectFilePath": "C:\\Users\\s_ochi\\Documents\\GitHub\\FinalTeamDev_TeamC\\Equipment\\Equipment1\\Equipment1.csproj",
   "expectedPackageFiles": [
-    "C:\\Users\\khosotani\\.nuget\\packages\\nlog\\6.1.3\\nlog.6.1.3.nupkg.sha512"
+    "C:\\Users\\s_ochi\\.nuget\\packages\\nlog\\6.1.3\\nlog.6.1.3.nupkg.sha512"
   ],
   "logs": []
 }

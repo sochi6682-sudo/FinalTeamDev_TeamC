@@ -1,23 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\khosotani\\source\\repos\\Equipment\\Equipment3\\Equipment3.csproj": {}
+    "C:\\Users\\s_ochi\\Documents\\GitHub\\FinalTeamDev_TeamC\\Equipment\\Equipment3\\Equipment3.csproj": {}
   },
   "projects": {
-    "C:\\Users\\khosotani\\source\\repos\\Equipment\\Equipment3\\Equipment3.csproj": {
+    "C:\\Users\\s_ochi\\Documents\\GitHub\\FinalTeamDev_TeamC\\Equipment\\Equipment3\\Equipment3.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\khosotani\\source\\repos\\Equipment\\Equipment3\\Equipment3.csproj",
+        "projectUniqueName": "C:\\Users\\s_ochi\\Documents\\GitHub\\FinalTeamDev_TeamC\\Equipment\\Equipment3\\Equipment3.csproj",
         "projectName": "Equipment3",
-        "projectPath": "C:\\Users\\khosotani\\source\\repos\\Equipment\\Equipment3\\Equipment3.csproj",
-        "packagesPath": "C:\\Users\\khosotani\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\khosotani\\source\\repos\\Equipment\\Equipment3\\obj\\",
+        "projectPath": "C:\\Users\\s_ochi\\Documents\\GitHub\\FinalTeamDev_TeamC\\Equipment\\Equipment3\\Equipment3.csproj",
+        "packagesPath": "C:\\Users\\s_ochi\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\s_ochi\\Documents\\GitHub\\FinalTeamDev_TeamC\\Equipment\\Equipment3\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\khosotani\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\s_ochi\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
