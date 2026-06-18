@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace FinalAssigenment.Pages;
 
-public class EqpStatusModel : PageModel
+public class EqpStateModel : PageModel
 {
     public void OnGet()
     {
