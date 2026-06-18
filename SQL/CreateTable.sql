@@ -39,7 +39,12 @@ VALUES(
 );
 
 INSERT INTO shelves
-VALUES('10101', 1, 0, 0);
+VALUES(
+	'10101',
+	'CAR000001',
+	NULL,
+	GETDATE()
+);
 
 SELECT * FROM commands;
 SELECT * FROM shelves;
