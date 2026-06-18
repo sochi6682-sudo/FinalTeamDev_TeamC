@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "6ySQnuNZA5U=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\khosotani\\source\\repos\\Equipment\\Equipment2\\Equipment2.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\khosotani\\.nuget\\packages\\nlog\\6.1.3\\nlog.6.1.3.nupkg.sha512"
+  ],
+  "logs": []
+}
