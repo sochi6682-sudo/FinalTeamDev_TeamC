@@ -4,10 +4,10 @@ using System.Text;
 
 namespace Equipment1.Models;
 
-public enum ControlState
-{
-    Offline = 0,
-    Online = 1
+public enum ControlState 
+{ 
+    Offline = 0, 
+    Online = 1 
 }
 
 public enum EquipmentStatus
@@ -18,7 +18,7 @@ public enum EquipmentStatus
 
 public enum AlarmStatus
 {
-    NoAlarm = 0,
+    NoAlarm = 0, 
     Alarm = 1
 }
 
