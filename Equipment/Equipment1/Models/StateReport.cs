@@ -9,13 +9,11 @@ public enum ControlState
     Offline = 0, 
     Online = 1 
 }
-
 public enum EquipmentStatus
 {
     Idle = 0,
     Active = 1
 }
-
 public enum AlarmStatus
 {
     NoAlarm = 0, 

@@ -10,25 +10,21 @@ public enum CommunicationStatus
     Offline = 0,
     Online = 1
 }
-
 public enum CommandReceptionStatus
 {
     Idle = 0,
     Active = 1
 }
-
 public enum LocalAlarmStatus
 {
     NoAlarm = 0,
     Alarm = 1
 }
-
 public enum OperatingStatus
 {
     Stop = 0,
     Busy = 1
 }
-
 public enum RetrieveAvailability
 {
     Available = 0,
