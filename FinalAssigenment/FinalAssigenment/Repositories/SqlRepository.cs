@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using FinalAssigenment.Models;
 using Microsoft.Data.SqlClient;
+using System.ComponentModel.Design;
 namespace FinalAssigenment.Repositories;
 
 public class SqlRepository
@@ -17,18 +18,26 @@ public class SqlRepository
 
     public List<Shelf> ShelfList;
     public Command RequestCommand;
-    public SystemInformation GetSystemInfo;
+    public SystemInformation GetResultInfomation;
 
-    public async Task<SystemInformation> SelectInfoAsync()
+    public async Task<SystemInformation> SelectInfomationAsync()
     {
         using (var connection = new SqlConnection(connectionString))
         {
             try
             {
-                //var sql = @"";
-                //GetSystemInfo = await connection.QueryAsync<SystemInformation>(sql);
+                var sqlCommands = @"";
+                var sqlShelves = "SELECT * FROM shelves;";
+                Task CommandsTask = connection.QueryAsync<Command>(sqlCommands);
+                Task shelvesTask = connection.QueryAsync<Shelf>(sqlShelves);
+                await Task.WhenAll(CommandsTask, shelvesTask);
+                GetResultInfomation = new()
+                {
+                    InfomationEqpStates = [],
 
-                return GetSystemInfo;
+                };
+
+                return GetResultInfomation;
             }
             catch (Exception ex)
             {
@@ -52,7 +61,50 @@ public class SqlRepository
             }
             catch (Exception ex)
             {
-                //_logger.LogError(ex, "予約一覧取得失敗");
+                //_logger.LogError(ex, "DB接続異常");
+                throw;
+            }
+        }
+    }
+    public async Task UpdateCommandStatusAsync(string commandId, int? commandStatus)
+    {
+        using (var connection = new SqlConnection(connectionString))
+        {
+            try
+            {
+                var sql = @"
+                        UPDATE commands 
+                        SET command_status = @CommandStatus 
+                        WHERE id = @CommandId;";
+
+                await connection.ExecuteAsync(sql, new
+                {
+                    CommandStatus = commandStatus,
+                    CommandId = commandId
+                });
+
+            }
+            catch (Exception ex)
+            {
+                //_logger.LogError(ex, "DB接続異常");
+                throw;
+            }
+        }
+    }
+    public async Task UpdateStatusAndTimeAsync(EquipmentCommand completion, DateTime CompletionAt)
+    {
+        using (var connection = new SqlConnection(connectionString))
+        {
+            try
+            {
+                //var sql = @"";
+
+                //GetSystemInfo = await connection.QueryAsync<SystemInformation>(sql);
+
+            }
+            catch (Exception ex)
+            {
+                //_logger.LogError(ex, "DB接続異常");
                 throw;
             }
         }

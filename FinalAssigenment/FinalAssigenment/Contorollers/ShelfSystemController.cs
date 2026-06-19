@@ -23,13 +23,14 @@ public class ShelfSystemController : ControllerBase
         _repository = repository;
         _service = service;
     }
+    private int statusType;
 
     [HttpGet]
     public async Task<IActionResult> GetInformationAsync()
     {
         try
         {
-            var systemInfo = await _repository.SelectInfoAsync();
+            var systemInfo = await _repository.SelectInfomationAsync();
             return Ok(systemInfo);
         }
         catch (Exception)
@@ -44,7 +45,7 @@ public class ShelfSystemController : ControllerBase
         {
             DateTime sendAt = DateTime.Now;
             var sendCommand = await _repository.GetCommandRequestAsync(sendAt);
-            //_logger.LogInformation( $"搬送指示送信 CommandID＝{CommandID},EqpName＝{EqpName}");
+           
             return Ok(sendCommand);
         }
         catch (Exception)
@@ -57,7 +58,7 @@ public class ShelfSystemController : ControllerBase
     {
         try
         {
-            
+            bool isInsertCheck = await _service.InsertValidationAsync(newCommand);
             return Created("", null);
         }
         catch (Exception)
@@ -70,7 +71,8 @@ public class ShelfSystemController : ControllerBase
     {
         try
         {
-            await _service.UnloadValidationAsync(unload);
+            bool isValid = await _service.UnloadValidationAsync(unload);
+            if(!isValid) return BadRequest();
             return Ok();
         }
         catch (Exception)
@@ -83,7 +85,7 @@ public class ShelfSystemController : ControllerBase
     {
         try
         {
-            int statusType = 0;
+            statusType = 1;
             _service.UpdateEqpStatus(online.EqpName, statusType);
             return Ok();
         }
@@ -97,11 +99,14 @@ public class ShelfSystemController : ControllerBase
     {
         try
         {
+            statusType = 2;
+            _service.UpdateEqpStatus(start.EqpName, statusType);
+            await _repository.UpdateCommandStatusAsync(start.CommandId, start.CommandStatus);
             return Ok();
         }
         catch (Exception)
         {
-            return StatusCode(500, "設備ONLINE報告失敗");
+            return StatusCode(500, "搬送開始報告失敗");
         }
     }
     [HttpPost("completion")]
@@ -109,6 +114,10 @@ public class ShelfSystemController : ControllerBase
     {
         try
         {
+            DateTime completionAt = DateTime.Now;
+            statusType = 2;
+            _service.UpdateEqpStatus(completion.EqpName, statusType);
+            await _repository.UpdateStatusAndTimeAsync(completion, completionAt);
             return Ok();
         }
         catch (Exception)
@@ -122,7 +131,7 @@ public class ShelfSystemController : ControllerBase
         try
         {
             if(string.IsNullOrWhiteSpace(eqpName)) return BadRequest("eqpNameが未入力です。");
-            int statusType = 2;
+            statusType = 3;
             _service.UpdateEqpStatus(eqpName, statusType);
             return Ok();
         }
@@ -137,7 +146,7 @@ public class ShelfSystemController : ControllerBase
         try
         {
             if (string.IsNullOrWhiteSpace(eqpName)) return BadRequest("eqpNameが未入力です。");
-            int statusType = 2;
+            statusType = 3;
             _service.UpdateEqpStatus(eqpName, statusType);
             return Ok();
         }
