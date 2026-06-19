@@ -17,7 +17,7 @@ internal class Program
         DeviceHttpListener listener = new DeviceHttpListener(controller);
 
         //サーバーAPI受信処理
-        _ = listener.HttpListenerStartAsync();
+        Task listenerTask = listener.HttpListenerStartAsync();
 
         //イニシャル処理
         await controller.InitAsync();
@@ -31,7 +31,7 @@ internal class Program
             }
             else if (controller.CurrentState.OperatingStatus == OperatingStatus.Busy)
             {
-                //RUN処理
+                //BUSY処理
                 await controller.RunBusyProcessAsync();
             }
             else

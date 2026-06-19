@@ -86,13 +86,13 @@ public class DeviceHttpListener
             //４）500返送
             Logger.Error(ex, "HTTP受信処理で例外発生");
 
-            try　//500送信例外対策
+            try　//500返送例外対策
             {
                 await WriteResponseAsync(context, 500, "Internal Server Error");
             }
             catch (Exception writeEx)
             {
-                Logger.Error(writeEx, "500応答返却失敗");
+                Logger.Error(writeEx, "500応答返送失敗");
             }
         }
     }
@@ -101,7 +101,7 @@ public class DeviceHttpListener
     //-------------------------------------------------------------------------------
     private async Task HandleStatusGetAsync(HttpListenerContext context)
     {
-        Logger.Info("EQP状態取得 GET受信");
+        Logger.Info("EQP状態取得GET受信");
 
         //現在の状態を取得してJSON形式に変換
         StateReport report = _controller.GetStateReport();
@@ -113,11 +113,11 @@ public class DeviceHttpListener
     }
 
 
-    // ３－２）払出可能 POST受信処理
+    // ３－２）払出完了 POST受信処理
     //-------------------------------------------------------------------------------
     private async Task HandleUnloadPostAsync(HttpListenerContext context)
     {
-        Logger.Info("払出可能POST受信");
+        Logger.Info("払出完了POST受信");
 
         //出庫可の状態へ移行
         _controller.SetRetrieveAvailable();
