@@ -83,8 +83,6 @@ public class SqlRepository
                     eqp_name,
                     location,
                     reception_at,
-                    send_at,
-                    completion_at,
                     command_status
                 )
                 VALUES (
@@ -93,10 +91,9 @@ public class SqlRepository
                     @EqpName,
                     @Location,
                     @ReceptionAt,
-                    @SendAt,
-                    @CompletionAt,
                     @CommandStatus
                 )
+                OUTPUT INSERTED.command_id 
                 ;";
 
                 string generatedId = await connection.QuerySingleAsync<string>(sqlInsert, insertData);
