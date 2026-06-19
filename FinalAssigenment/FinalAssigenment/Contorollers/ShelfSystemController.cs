@@ -23,6 +23,7 @@ public class ShelfSystemController : ControllerBase
         _repository = repository;
         _service = service;
     }
+
     [HttpGet]
     public async Task<IActionResult> GetInformationAsync()
     {

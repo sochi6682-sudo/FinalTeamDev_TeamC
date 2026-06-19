@@ -4,17 +4,17 @@ namespace FinalAssigenment.Models;
 
 public class EquipmentCommand
 {
-    [Required]
+    [Required(ErrorMessage = "搬送指示IDが未入力または空白です。")]
     public string CommandId { get; set; }
-    [Required]
-    public int CommandType { get; set; }
-    [Required]
+    [Required(ErrorMessage = "出庫か入庫を選択してください。")]
+    public int? CommandType { get; set; }
+    [Required(ErrorMessage = "キャリアIDが未入力または空白です。")]
     public string CarrierId { get; set; }
-    [Required]
+    [Required(ErrorMessage = "設備IDが未入力または空白です。")]
     public string EqpName { get; set; }
-    [Required]
+    [Required(ErrorMessage = "棚IDが未入力または空白です。")]
     public string Location { get; set; }
-    [Required]
-    public int CommandStatus { get; set; }
+    [Required(ErrorMessage = "搬送指示IDが未入力または空白です。")]
+    public int? CommandStatus { get; set; }
 
 }

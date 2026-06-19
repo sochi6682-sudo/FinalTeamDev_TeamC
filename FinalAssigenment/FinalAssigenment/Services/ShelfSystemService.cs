@@ -19,24 +19,26 @@ public class ShelfSystemService
         _httpClient = httpClient;
     }
 
-    public List<EquipmentState> eqpStatusList;
+    public List<EquipmentState> eqpStatusList = [
+            new(){EqpName = "EQP01", ControlState = 0, EquipmentStatus = 0, AlarmStatus = 0 },
+            new(){EqpName = "EQP02", ControlState = 0, EquipmentStatus = 0, AlarmStatus = 0 },
+            new(){EqpName = "EQP03", ControlState = 0, EquipmentStatus = 0, AlarmStatus = 0}
+        ];
     public void UpdateEqpStatus(string eqpName, int statusType)
     {
 
     }
 
     public async Task UnloadValidationAsync(RelayCommand unload)
-    {
-        string url = "";
-        if (unload.EqpName == "Eqp01") url = "http://localhost:8090/"; 
-        else if (unload.EqpName == "Eqp02") url = "http://localhost:8091/"; 
-        else if (unload.EqpName == "Eqp03") url = "http://localhost:8092/";
-        
-        await PostHttpClientAsync(url, unload);
+    {   
+        await PostHttpClientAsync(unload.EqpName, unload);
     }
 
-    public async Task PostHttpClientAsync(string url, RelayCommand sendCommand)
+    public async Task PostHttpClientAsync(string eqpName, RelayCommand sendCommand)
     {
-
+        string url = "";
+        if (eqpName == "Eqp01") url = "http://localhost:8090/";
+        else if (eqpName == "Eqp02") url = "http://localhost:8091/";
+        else if (eqpName == "Eqp03") url = "http://localhost:8092/";
     }
 }
