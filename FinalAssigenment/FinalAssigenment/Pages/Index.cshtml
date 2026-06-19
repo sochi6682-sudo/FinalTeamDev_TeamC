@@ -1,7 +1,100 @@
 ﻿@page
 @model IndexModel
 @{
-    ViewData["Title"] = "メニュー";
+    ViewData["Title"] = "Warehouse App";
 }
 
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
 
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="stylesheet" href="/css/site.css" />
+
+    <title>Warehouse App</title>
+</head>
+
+<body>
+    
+    <!-- サーバー停止オーバーレイ -->
+    <div id="serverStopOverlay" class="card-img-overlay hidden">
+        <div class="overlay-text">サーバー停止中</div>
+    </div>
+
+    <!-- メニュー画面 -->
+
+    <div id="screen-menu" class="modal-fullscreen active">
+        <h2>メニュー</h2>
+
+        <button id="btn-send-commands">搬送指示送信</button>
+        <button id="btn-get-commands">搬送指示一覧</button>
+        <button id="btn-complete-report">出庫完了報告</button>
+        <button id="btn-inventory-list">在庫一覧</button>
+        <button id="btn-shelf-status">保管状態</button>
+    </div>
+
+    <!-- 搬送指示送信画面 -->
+    <div id="screen-send-comand" class="modal-fullscreen hidden">
+        <h2>搬送指示送信</h2>
+
+        キャリアID:<input id="input-carrier" type="text"><br>
+        自動保管棚ID:
+        <select id="input-shelf"></select>
+
+        <button id="btn-inbound">入庫</button>
+        <button id="btn-outbound">出庫</button>
+
+        <span class="lamp-inbound" data-id="10101"></span>
+        <span class="lamp-outbound" data-id="10101"></span>
+
+        <button id="btn-back">戻る</button>
+    </div>
+
+    <!-- 搬送指示一覧画面 -->
+    <div id="screen-command-list" class="screen hidden">
+        <h2>搬送指示一覧</h2>
+
+        <div class="tabs">
+            <button class="tab-command" data-status="0">QUEUED</button>
+            <button class="tab-command" data-status="1">ACTIVE</button>
+            <button class="tab-command" data-status="history">履歴</button>
+        </div>
+
+        <div id="command-list"></div>
+
+        <button id="btn-back">戻る</button>
+    </div>
+
+    <!-- 出庫完了報告画面 -->
+    <div id="screen-complete-report" class="screen hidden">
+        <h2>出庫完了報告</h2>
+
+        <div id="complete-list">
+            <!-- JSで動的に生成 -->
+        </div>
+
+        <button id="btn-back">戻る</button>
+    </div>
+
+    <!-- 在庫一覧画面 -->
+    <div id="screen-inventory" class="modal-fullscreen hidden">
+        <h2>在庫一覧</h2>
+
+        キャリアID検索:<input id="search-carrier" type="text">
+
+        <div id="inventory-list"></div>
+
+        <button id="btn-back">戻る</button>
+    </div>
+
+    <!-- 設備状態画面 -->
+    <div id="screen-shelf-status" class="modal-fullscreen hidden">
+        <h2>設備状態</h2>
+
+        <div id="equipment-status"></div>
+
+        <button id="btn-back">戻る</button>
+    </div>
+
+    <script src="js/site.js"></script>
+</body>
