@@ -13,8 +13,8 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
         builder.Services.AddOpenApi();
-        builder.Services.AddScoped<SqlRepository>();
-        builder.Services.AddScoped<ShelfSystemService>();
+        builder.Services.AddSingleton<SqlRepository>();
+        builder.Services.AddSingleton<ShelfSystemService>();
 
         builder.Services.AddControllers()
         .AddJsonOptions(options =>

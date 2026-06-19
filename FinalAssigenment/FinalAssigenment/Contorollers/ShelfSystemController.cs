@@ -31,6 +31,7 @@ public class ShelfSystemController : ControllerBase
         try
         {
             var systemInfo = await _repository.SelectInfomationAsync();
+            systemInfo.Status = _service.eqpStatusList;
             return Ok(systemInfo);
         }
         catch (Exception)
@@ -58,12 +59,16 @@ public class ShelfSystemController : ControllerBase
     {
         try
         {
-            bool isInsertCheck = await _service.InsertValidationAsync(newCommand);
-            return Created("", null);
+            await _service.InsertValidationAsync(newCommand);
+            return Created("搬送指示登録成功", null);
+        }
+        catch (HttpRequestException ex)
+        {
+            return StatusCode((int)ex.StatusCode.Value, ex.Message);
         }
         catch (Exception)
         {
-            return StatusCode(500, "搬送指示登録失敗(想定外例外)");
+            return StatusCode(500, "");
         }
     }
     [HttpPost("unload")]
@@ -71,8 +76,11 @@ public class ShelfSystemController : ControllerBase
     {
         try
         {
-            bool isValid = await _service.UnloadValidationAsync(unload);
-            if(!isValid) return BadRequest();
+            bool isValueCheck = await _service.UnloadValidationAsync(unload);
+            if (!isValueCheck)
+            {
+                return NotFound();
+            }
             return Ok();
         }
         catch (Exception)
@@ -137,7 +145,7 @@ public class ShelfSystemController : ControllerBase
         }
         catch (Exception)
         {
-            return StatusCode(500, "設備ONLINE報告失敗");
+            return StatusCode(500, "異常発生報告失敗");
         }
     }
     [HttpPost("recovery")]
@@ -152,7 +160,7 @@ public class ShelfSystemController : ControllerBase
         }
         catch (Exception)
         {
-            return StatusCode(500, "設備ONLINE報告失敗");
+            return StatusCode(500, "異常復旧報告失敗");
         }
     }
 

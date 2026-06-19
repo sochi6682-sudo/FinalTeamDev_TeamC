@@ -2,6 +2,7 @@
 using FinalAssigenment.Models;
 using Microsoft.Data.SqlClient;
 using System.ComponentModel.Design;
+using System.Transactions;
 namespace FinalAssigenment.Repositories;
 
 public class SqlRepository
@@ -16,9 +17,9 @@ public class SqlRepository
         _logger = logger;
     }
 
-    public List<Shelf> ShelfList;
-    public Command RequestCommand;
-    public SystemInformation GetResultInfomation;
+    private List<Shelf> ShelfList;
+    private Command RequestCommand;
+    private SystemInformation GetResultInfomation;
 
     public async Task<SystemInformation> SelectInfomationAsync()
     {
@@ -26,15 +27,38 @@ public class SqlRepository
         {
             try
             {
-                var sqlCommands = @"";
-                var sqlShelves = "SELECT * FROM shelves;";
-                Task CommandsTask = connection.QueryAsync<Command>(sqlCommands);
-                Task shelvesTask = connection.QueryAsync<Shelf>(sqlShelves);
-                await Task.WhenAll(CommandsTask, shelvesTask);
+                var sqlCommands = @"
+                                SELECT command_id AS CommandId,
+                                command_type AS CommandType,
+                                carrier_id AS CarrierId,
+                                eqp_name AS EqpName,
+                                location AS Location,
+                                reception_at AS ReceptionAt,
+                                send_at AS SendAt,
+                                completion_at AS CompletionAt,
+                                command_status AS CommandStatus
+                                FROM commands
+                                WHERE command_status IN (0,1)
+                                UNION ALL
+                                SELECT TOP(100) * FROM commands
+                                WHERE command_status IN (2,3)
+                                ;";
+                var sqlShelves = @"
+                                SELECT shelf_location AS ShelfLocation,
+                                stored_carrier_id AS StoredCarrierId,
+                                reservation AS Reservation,
+                                storage_at AS StorageAt
+                                FROM shelves
+                                ;";
+                var resultCommands = await connection.QueryAsync<Command>(sqlCommands);
+                var commands = resultCommands.ToList();
+                var resultShelves = await connection.QueryAsync<Shelf>(sqlShelves);
+                var shelves = resultShelves.ToList();
                 GetResultInfomation = new()
                 {
-                    InfomationEqpStates = [],
-
+                    Status = [],
+                    Commands = commands,
+                    Shelves = shelves
                 };
 
                 return GetResultInfomation;
@@ -46,7 +70,58 @@ public class SqlRepository
             }
         }
     }
+    public async Task InsertCommandsAsync(Command insertData)
+    {
+        using (var connection = new SqlConnection(connectionString))
+        {
+            try
+            {
+                var sqlInsert = @"
+                INSERT INTO commands (
+                    carrier_id,
+                    command_type,
+                    eqp_name,
+                    location,
+                    reception_at,
+                    send_at,
+                    completion_at,
+                    command_status
+                )
+                VALUES (
+                    @CarrierId,
+                    @CommandType,
+                    @EqpName,
+                    @Location,
+                    @ReceptionAt,
+                    @SendAt,
+                    @CompletionAt,
+                    @CommandStatus
+                )
+                ;";
 
+                string generatedId = await connection.QuerySingleAsync<string>(sqlInsert, insertData);
+                if (insertData.CommandType == 0)
+                {
+                    var sqlUpdateShelf = @"
+                        UPDATE shelves
+                        SET reservation = @Reservation
+                        WHERE shelf_location = @ShelfLocation
+                        ;";
+
+                    var updateParams = new
+                    {
+                        Reservation = generatedId,
+                        ShelfLocation = insertData.Location   
+                    };
+                    await connection.ExecuteAsync(sqlUpdateShelf, updateParams);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+    }
     public async Task<Command> GetCommandRequestAsync(DateTime sendAt)
     {
         using (var connection = new SqlConnection(connectionString))
@@ -108,5 +183,32 @@ public class SqlRepository
                 throw;
             }
         }
+    }
+
+    public async Task<List<Shelf>> GetShelfAsync(string prefix)
+    {
+        using (var connection = new SqlConnection(connectionString))
+        {
+            try
+            {
+                var sql = @"
+                        SELECT shelf_location AS ShelfLocation,
+                        stored_carrier_id AS StoredCarrierId,
+                        reservation AS Reservation,
+                        storage_at AS StorageAt
+                        FROM shelves
+                        WHERE shelf_location LIKE @Prefix
+                        ; ";
+
+                var result = await connection.QueryAsync<Shelf>(sql, new { Prefix = prefix });
+                ShelfList = result.ToList();
+            }
+            catch (Exception ex)
+            {
+                //_logger.LogError(ex, "DB接続異常");
+                throw;
+            }
+        }
+        return ShelfList;
     }
 }

@@ -2,7 +2,7 @@
 
 public class SystemInformation
 {
-    public List<EquipmentState> InfomationEqpStates { get; set; }
-    public List<Command> InfomationCommands {  get; set; }
-    public List<Shelf> InfomationShelves { get; set; }
+    public List<EquipmentState> Status { get; set; }
+    public List<Command> Commands {  get; set; }
+    public List<Shelf> Shelves { get; set; }
 }
