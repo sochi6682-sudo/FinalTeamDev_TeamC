@@ -23,12 +23,15 @@ public class ShelfSystemController : ControllerBase
         _repository = repository;
         _service = service;
     }
+    private int statusType;
+
     [HttpGet]
     public async Task<IActionResult> GetInformationAsync()
     {
         try
         {
-            var systemInfo = await _repository.SelectInfoAsync();
+            var systemInfo = await _repository.SelectInfomationAsync();
+            systemInfo.Status = _service.eqpStatusList;
             return Ok(systemInfo);
         }
         catch (Exception)
@@ -43,7 +46,7 @@ public class ShelfSystemController : ControllerBase
         {
             DateTime sendAt = DateTime.Now;
             var sendCommand = await _repository.GetCommandRequestAsync(sendAt);
-            //_logger.LogInformation( $"搬送指示送信 CommandID＝{CommandID},EqpName＝{EqpName}");
+           
             return Ok(sendCommand);
         }
         catch (Exception)
@@ -56,12 +59,16 @@ public class ShelfSystemController : ControllerBase
     {
         try
         {
-            
-            return Created("", null);
+            await _service.InsertValidationAsync(newCommand);
+            return Created("搬送指示登録成功", null);
+        }
+        catch (HttpRequestException ex)
+        {
+            return StatusCode((int)ex.StatusCode.Value, ex.Message);
         }
         catch (Exception)
         {
-            return StatusCode(500, "搬送指示登録失敗(想定外例外)");
+            return StatusCode(500, "");
         }
     }
     [HttpPost("unload")]
@@ -69,7 +76,11 @@ public class ShelfSystemController : ControllerBase
     {
         try
         {
-            await _service.UnloadValidationAsync(unload);
+            bool isValueCheck = await _service.UnloadValidationAsync(unload);
+            if (!isValueCheck)
+            {
+                return NotFound();
+            }
             return Ok();
         }
         catch (Exception)
@@ -82,7 +93,7 @@ public class ShelfSystemController : ControllerBase
     {
         try
         {
-            int statusType = 0;
+            statusType = 1;
             _service.UpdateEqpStatus(online.EqpName, statusType);
             return Ok();
         }
@@ -96,11 +107,14 @@ public class ShelfSystemController : ControllerBase
     {
         try
         {
+            statusType = 2;
+            _service.UpdateEqpStatus(start.EqpName, statusType);
+            await _repository.UpdateCommandStatusAsync(start.CommandId, start.CommandStatus);
             return Ok();
         }
         catch (Exception)
         {
-            return StatusCode(500, "設備ONLINE報告失敗");
+            return StatusCode(500, "搬送開始報告失敗");
         }
     }
     [HttpPost("completion")]
@@ -108,6 +122,10 @@ public class ShelfSystemController : ControllerBase
     {
         try
         {
+            DateTime completionAt = DateTime.Now;
+            statusType = 2;
+            _service.UpdateEqpStatus(completion.EqpName, statusType);
+            await _repository.UpdateStatusAndTimeAsync(completion, completionAt);
             return Ok();
         }
         catch (Exception)
@@ -121,13 +139,13 @@ public class ShelfSystemController : ControllerBase
         try
         {
             if(string.IsNullOrWhiteSpace(eqpName)) return BadRequest("eqpNameが未入力です。");
-            int statusType = 2;
+            statusType = 3;
             _service.UpdateEqpStatus(eqpName, statusType);
             return Ok();
         }
         catch (Exception)
         {
-            return StatusCode(500, "設備ONLINE報告失敗");
+            return StatusCode(500, "異常発生報告失敗");
         }
     }
     [HttpPost("recovery")]
@@ -136,13 +154,13 @@ public class ShelfSystemController : ControllerBase
         try
         {
             if (string.IsNullOrWhiteSpace(eqpName)) return BadRequest("eqpNameが未入力です。");
-            int statusType = 2;
+            statusType = 3;
             _service.UpdateEqpStatus(eqpName, statusType);
             return Ok();
         }
         catch (Exception)
         {
-            return StatusCode(500, "設備ONLINE報告失敗");
+            return StatusCode(500, "異常復旧報告失敗");
         }
     }
 

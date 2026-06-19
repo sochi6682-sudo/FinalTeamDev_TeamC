@@ -4,10 +4,8 @@ namespace FinalAssigenment.Models;
 
 public class RelayCommand
 {
-    [Required]
     public string CommandId { get; set; }
-    [Required]
     public string CarrierId { get; set; }
-    [Required]
+    [Required(ErrorMessage = "設備IDが未入力または空白です。")]
     public string EqpName { get; set; }
 }

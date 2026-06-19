@@ -12,9 +12,9 @@ public class Program
     public static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
-
-        builder.Services.AddScoped<SqlRepository>();
-        builder.Services.AddScoped<ShelfSystemService>();
+        builder.Services.AddOpenApi();
+        builder.Services.AddSingleton<SqlRepository>();
+        builder.Services.AddSingleton<ShelfSystemService>();
 
         builder.Services.AddControllers()
         .AddJsonOptions(options =>
