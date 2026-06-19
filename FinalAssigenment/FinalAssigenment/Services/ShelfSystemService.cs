@@ -123,9 +123,12 @@ public class ShelfSystemService
 
             availableLocation = matchedShelf.ShelfLocation;
         }
-        
+        // ⭕ 正しい書き方（$マークを付けて、波カッコで囲む）
+        Console.WriteLine($"CarrierId: {newCommand.CarrierId}, Type: {newCommand.CommandType}, Eqp: {newCommand.EqpName}, Location: {availableLocation}");
+
         Command insertData = new Command()
         {
+            CarrierId = newCommand.CarrierId,
             CommandType = (int)newCommand.CommandType,
             EqpName = newCommand.EqpName,
             Location = availableLocation, 
