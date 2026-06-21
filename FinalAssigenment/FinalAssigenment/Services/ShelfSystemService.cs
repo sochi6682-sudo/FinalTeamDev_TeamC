@@ -49,20 +49,17 @@ public class ShelfSystemService
             if (response.IsSuccessStatusCode)
             {
                 var eqpState = await response.Content.ReadFromJsonAsync<EquipmentState>();
-                int statusType = 1;
-                UpdateEqpStatus(eqpState.EqpName, statusType);
-                if (eqpState?.AlarmStatus == 1)
-                {
-                    statusType = 2; 
-                    UpdateEqpStatus(eqpState.EqpName, statusType);
-                }
+                var targetEqp = eqpStatusList.First(e => e.EqpName == eqpState.EqpName);
+                targetEqp.ControlState = eqpState.ControlState;
+                targetEqp.AlarmStatus = eqpState.AlarmStatus;
+
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             throw;
         }
-        
+
     }
     public async Task InsertValidationAsync(InsertCommand newCommand)
     {
@@ -74,29 +71,28 @@ public class ShelfSystemService
         {
             throw new HttpRequestException("設備IDが存在しません。", null, System.Net.HttpStatusCode.NotFound);
         }
-
-        string availableLocation = "";
-        string prefix = "";
-        if (newCommand.EqpName == "EQP01") { prefix = "1%"; } 
-        else if (newCommand.EqpName == "EQP02") { prefix = "2%"; }
-        else if (newCommand.EqpName == "EQP03") { prefix = "3%"; }
-        var shelfList = await _repository.GetShelfAsync(prefix);
-
-        bool isCarrierAlreadyStored = shelfList.Any(s => s.StoredCarrierId == newCommand.CarrierId);
-        if (isCarrierAlreadyStored)
-        {
-            throw new HttpRequestException("指定されたキャリアIDは既に入庫されています。", null, HttpStatusCode.BadRequest);
-        }
         var targetEqp = eqpStatusList.First(e => e.EqpName == newCommand.EqpName);
         if (targetEqp.ControlState == 0)
         {
             throw new HttpRequestException("指定された設備がOFFLINEです。", null, HttpStatusCode.BadRequest);
         }
+
+        string availableLocation = "";
+        string prefix = "";
+        if (newCommand.EqpName == "EQP01") { prefix = "1%"; }
+        else if (newCommand.EqpName == "EQP02") { prefix = "2%"; }
+        else if (newCommand.EqpName == "EQP03") { prefix = "3%"; }
+        var shelfList = await _repository.GetShelfAsync(prefix);
+        bool isCarrierAlreadyStored = shelfList.Any(s => s.StoredCarrierId == newCommand.CarrierId);
         Shelf? selectedInShelf = shelfList.FirstOrDefault(s => s.StoredCarrierId == null);
         bool isAllEmpty = shelfList.Any(s => s.StoredCarrierId != null);
         Shelf? matchedShelf = shelfList.FirstOrDefault(s => s.StoredCarrierId == newCommand.CarrierId);
         if (newCommand.CommandType == 1)
         {
+            if (isCarrierAlreadyStored)
+            {
+                throw new HttpRequestException("指定されたキャリアIDは既に入庫されています。", null, HttpStatusCode.BadRequest);
+            }
             if (selectedInShelf == null)
             {
                 throw new HttpRequestException("棚が満帆のため入庫できません。", null, HttpStatusCode.BadRequest);
@@ -123,15 +119,13 @@ public class ShelfSystemService
 
             availableLocation = matchedShelf.ShelfLocation;
         }
-        // ⭕ 正しい書き方（$マークを付けて、波カッコで囲む）
-        Console.WriteLine($"CarrierId: {newCommand.CarrierId}, Type: {newCommand.CommandType}, Eqp: {newCommand.EqpName}, Location: {availableLocation}");
 
         Command insertData = new Command()
         {
             CarrierId = newCommand.CarrierId,
             CommandType = (int)newCommand.CommandType,
             EqpName = newCommand.EqpName,
-            Location = availableLocation, 
+            Location = availableLocation,
             ReceptionAt = DateTime.Now,
             SendAt = null,
             CompletionAt = null,
@@ -140,34 +134,27 @@ public class ShelfSystemService
         await _repository.InsertCommandsAsync(insertData);
     }
 
-    public void UpdateEqpStatus(string eqpName, int statusType)
+    public void UpdateEqpStatus(string eqpName, string endPoint)
     {
         var targetEqp = eqpStatusList.First(e => e.EqpName == eqpName);
-        if (statusType == 1)
-        {
-            targetEqp.ControlState = (targetEqp.ControlState == 1) ? 0 : 1;
-        }
-        else if(statusType == 2)
-        {
-            targetEqp.EquipmentStatus = (targetEqp.EquipmentStatus == 1) ? 0 : 1;
-        }
-        else if(statusType == 3)
-        {
-            targetEqp.AlarmStatus = (targetEqp.AlarmStatus == 1) ? 0 : 1;
-        }
+        if (endPoint == "online") targetEqp.ControlState = 1;
+        else if (endPoint == "start") targetEqp.EquipmentStatus = 1;
+        else if (endPoint == "completion") targetEqp.EquipmentStatus = 0;
+        else if (endPoint == "incident") targetEqp.AlarmStatus = 1;
+        else if (endPoint == "recovery") targetEqp.AlarmStatus = 0;
     }
 
-    public async Task<bool> UnloadValidationAsync(RelayCommand unload)
+    public async Task<bool> UnloadValidationAsync(RelayCommand unload, string endPoint)
     {
-        if(unload.EqpName != "Eqp01" && unload.EqpName != "Eqp02" && unload.EqpName != "Eqp03")
+        if (unload.EqpName != "Eqp01" && unload.EqpName != "Eqp02" && unload.EqpName != "Eqp03")
         {
             return false;
         }
-        await PostHttpClientAsync(unload);
+        await PostHttpClientAsync(unload, endPoint);
         return true;
     }
 
-    public async Task PostHttpClientAsync(RelayCommand sendCommand)
+    public async Task PostHttpClientAsync(RelayCommand sendCommand, string endPoint)
     {
         string url = "";
         if (sendCommand.EqpName == "EQP01") url = eqpBaseUrls[0];
@@ -176,9 +163,9 @@ public class ShelfSystemService
 
         try
         {
-            var response = await _httpClient.PostAsJsonAsync($"{url}/api/shelf-system/unload", sendCommand);
+            var response = await _httpClient.PostAsJsonAsync($"{url}/api/shelf-system/{endPoint}", sendCommand);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             throw;
         }
