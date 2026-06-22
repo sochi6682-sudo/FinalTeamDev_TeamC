@@ -55,9 +55,9 @@ public class ShelfSystemService
 
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            throw;
+            Console.WriteLine($"【通信失敗】{url} への接続に失敗しました。理由: {ex.Message}");
         }
 
     }

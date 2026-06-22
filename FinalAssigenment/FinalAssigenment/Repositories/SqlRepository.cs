@@ -17,8 +17,6 @@ public class SqlRepository
         _logger = logger;
     }
 
-    private List<Shelf> ShelfList;
-    private Command RequestCommand;
     private SystemInformation GetResultInfomation;
 
     public async Task<SystemInformation> SelectInfomationAsync()
@@ -28,27 +26,31 @@ public class SqlRepository
             try
             {
                 var sql = @"
-                                SELECT command_id AS CommandId,
-                                command_type AS CommandType,
-                                carrier_id AS CarrierId,
-                                eqp_name AS EqpName,
-                                location AS Location,
-                                reception_at AS ReceptionAt,
-                                send_at AS SendAt,
-                                completion_at AS CompletionAt,
-                                command_status AS CommandStatus
-                                FROM commands
-                                WHERE command_status IN (0,1)
-                                UNION ALL
-                                SELECT TOP(100) * FROM commands
-                                WHERE command_status IN (2,3)
-                                ;
-                                SELECT shelf_location AS ShelfLocation,
-                                stored_carrier_id AS StoredCarrierId,
-                                reservation AS Reservation,
-                                storage_at AS StorageAt
-                                FROM shelves
-                                ;";
+                          //搬送指示の未完了を全件、完了を100件取得
+                          SELECT 
+                          command_id AS CommandId,
+                          command_type AS CommandType,
+                          carrier_id AS CarrierId,
+                          eqp_name AS EqpName,
+                          location AS Location,
+                          reception_at AS ReceptionAt,
+                          send_at AS SendAt,
+                          completion_at AS CompletionAt,
+                          command_status AS CommandStatus
+                          FROM commands
+                          WHERE command_status IN (0,1)
+                          UNION ALL
+                          SELECT 
+                          TOP(100) * FROM commands
+                          WHERE command_status IN (2,3)
+                          ORDER BY completion_at DESC;
+                          //棚の情報を全件取得
+                          SELECT 
+                          shelf_location AS ShelfLocation,
+                          stored_carrier_id AS StoredCarrierId,
+                          reservation AS Reservation,
+                          storage_at AS StorageAt
+                          FROM shelves;";
                 using var multi = await connection.QueryMultipleAsync(sql);
 
                 var commands = (await multi.ReadAsync<Command>()).ToList();
@@ -76,30 +78,29 @@ public class SqlRepository
         {
             try
             {
-                var sqlCombined = @"
-                    -- 搬送指示IDを格納する変数を定義
-                    DECLARE @OutputTable TABLE (id VARCHAR(10));
+                var sql = @"
+                          -- 搬送指示IDを格納する変数を定義
+                          DECLARE @OutputTable TABLE (id VARCHAR(10));
 
-                    -- INSERTと同時に、生成された搬送指示IDを変数に直接代入する
-                    INSERT INTO commands (
-                        carrier_id, command_type, eqp_name, location, reception_at, command_status
-                    )
-                    OUTPUT INSERTED.command_id INTO @OutputTable
-                    VALUES (
-                        @CarrierId, @CommandType, @EqpName, @Location, @ReceptionAt, @CommandStatus
-                    );
+                          -- INSERTと同時に、生成された搬送指示IDを変数に直接代入する
+                          INSERT INTO commands (
+                              carrier_id, command_type, eqp_name, location, reception_at, command_status
+                          )
+                          OUTPUT INSERTED.command_id INTO @OutputTable
+                          VALUES (
+                            @CarrierId, @CommandType, @EqpName, @Location, @ReceptionAt, @CommandStatus
+                          );
 
-                    -- CommandTypeが0なら棚をアップデート
-                    IF @CommandType = 0
-                    BEGIN
-                        UPDATE shelves
-                        SET reservation = (SELECT id FROM @OutputTable)
-                        WHERE shelf_location = @Location;
-                    END
-                    ";
+                          -- CommandTypeが0なら棚を更新
+                          IF @CommandType = 0
+                          BEGIN
+                            UPDATE shelves
+                            SET reservation = (SELECT id FROM @OutputTable)
+                            WHERE shelf_location = @Location;
+                          END";
 
                 // C#側は結果を受け取らないので ExecuteAsync で一発実行するだけ
-                await connection.ExecuteAsync(sqlCombined, insertData);
+                await connection.ExecuteAsync(sql, insertData);
             }
             catch (Exception ex)
             {
@@ -114,53 +115,51 @@ public class SqlRepository
             try
             {
                 var sql = @"
-                    -- 後半の処理で使い回すための変数を宣言
-                    DECLARE @SelectedId VARCHAR(10), @SelectedType INT, @SelectedLocation VARCHAR(50);
+                          -- 後半の処理で使い回すための変数を宣言
+                          DECLARE @SelectedId VARCHAR(10), @SelectedType INT, @SelectedLocation VARCHAR(50);
 
-                    -- 条件（0→1）に合う最も古い未送信の1件を特定
-                    WITH TargetCommand AS (
-                        SELECT TOP 1 *
-                        FROM commands
-                        WHERE command_status = 0 
-                        AND eqp_name = @EqpName
-                        ORDER BY 
-                        command_type ASC,
-                        reception_at ASC
-                    )
-                    -- 送信時刻に「GETDATE()」を直接指定して、SQLの実行瞬間の時刻を記録
-                    UPDATE TargetCommand
-                    SET 
-                    send_at = GETDATE(),
-                    command_status = 1,
-                    @SelectedId = command_id,
-                    @SelectedType = command_type,
-                    @SelectedLocation = location;
+                          -- 条件（0→1）に合う最も古い未送信の1件を特定
+                          WITH TargetCommand AS (
+                              SELECT TOP 1 *
+                              FROM commands
+                              WHERE command_status = 0 
+                              AND eqp_name = @EqpName
+                              ORDER BY 
+                              command_type ASC,
+                              reception_at ASC
+                          )
+                          -- 送信時刻に「GETDATE()」を直接指定して、SQLの実行瞬間の時刻を記録
+                          UPDATE TargetCommand
+                          SET 
+                          send_at = GETDATE(),
+                          command_status = 1,
+                          @SelectedId = command_id,
+                          @SelectedType = command_type,
+                          @SelectedLocation = location;
 
-                    -- 出庫（0）の時だけ、棚の予約を更新
-                    IF @SelectedType = 0
-                    BEGIN
-                        UPDATE shelves
-                        SET reservation = @SelectedId
-                        WHERE shelf_location = @SelectedLocation;
-                    END
+                          -- 出庫（0）の時だけ、棚の予約を更新
+                          IF @SelectedType = 0
+                          BEGIN
+                            UPDATE shelves
+                            SET reservation = @SelectedId
+                            WHERE shelf_location = @SelectedLocation;
+                          END
 
-                    -- C#（Dapper）へ返すデータをSELECT（send_atは除外）
-                    SELECT 
-                    command_id AS CommandId,
-                    command_type AS CommandType,
-                    carrier_id AS CarrierId,
-                    eqp_name AS EqpName,
-                    location AS Location,
-                    reception_at AS ReceptionAt,
-                    send_at AS SendAt,
-                    completion_at AS CompletionAt,
-                    command_status AS CommandStatus
-                    FROM commands
-                    WHERE command_id = @SelectedId;";
+                          -- 設備機器へ返すデータをSELECT
+                          SELECT 
+                          command_id AS CommandId,
+                          command_type AS CommandType,
+                          carrier_id AS CarrierId,
+                          eqp_name AS EqpName,
+                          location AS Location,
+                          reception_at AS ReceptionAt,
+                          send_at AS SendAt,
+                          completion_at AS CompletionAt,
+                          command_status AS CommandStatus
+                          FROM commands
+                          WHERE command_id = @SelectedId;";
 
-                RequestCommand = await connection.QuerySingleOrDefaultAsync<Command>(sql, new { EqpName = eqpName });
-
-                return RequestCommand;
+                return await connection.QueryFirstOrDefaultAsync<Command>(sql, new { EqpName = eqpName });
             }
             catch (Exception)
             {
@@ -176,9 +175,9 @@ public class SqlRepository
             try
             {
                 var sql = @"
-                        UPDATE commands 
-                        SET command_status = @CommandStatus 
-                        WHERE command_id = @CommandId;";
+                          UPDATE commands 
+                          SET command_status = @CommandStatus 
+                          WHERE command_id = @CommandId;";
 
                 await connection.ExecuteAsync(sql, new
                 {
@@ -194,45 +193,44 @@ public class SqlRepository
             }
         }
     }
-    public async Task UpdateStatusAndTimeAsync(EquipmentCommand completion, DateTime CompletionAt)
+    public async Task UpdateCompletionAsync(EquipmentCommand completion, DateTime CompletionAt)
     {
         using (var connection = new SqlConnection(connectionString))
         {
             try
             {
-                // 1回の通信で両方のテーブルを条件付きで更新するSQL
                 var sql = @"
-                -- commandsテーブルの更新（入庫・出庫共通）
-                UPDATE commands
-                SET 
-                    command_status = @CommandStatus,
-                    completion_at = @CompletionAt
-                WHERE 
-                    command_id = @CommandId;
+                          -- commandsテーブルの更新（入庫・出庫共通）
+                          UPDATE commands
+                          SET 
+                            command_status = @CommandStatus,
+                            completion_at = @CompletionAt
+                          WHERE 
+                            command_id = @CommandId;
 
-                -- shelvesテーブルの更新（CommandTypeで分岐）
-                IF @CommandType = 1
-                BEGIN
-                    -- 入庫の場合：キャリアIDと入庫時刻を更新
-                    UPDATE shelves
-                    SET 
-                        stored_carrier_id = @CarrierId,
-                        storage_at = @CompletionAt
-                    WHERE 
-                        shelf_location = @Location;
-                END
-                ELSE IF @CommandType = 0
-                BEGIN
-                    -- 出庫の場合：キャリアID、入庫時刻、予約をnullにする
-                    UPDATE shelves
-                    SET 
-                        stored_carrier_id = NULL,
-                        reservation = NULL,
-                        storage_at = NULL
-                    WHERE 
-                        shelf_location = @Location;
+                          -- shelvesテーブルの更新（CommandTypeで分岐）
+                          IF @CommandType = 1
+                          BEGIN
+                            -- 入庫の場合：キャリアIDと入庫時刻を更新
+                            UPDATE shelves
+                            SET 
+                                stored_carrier_id = @CarrierId,
+                                storage_at = @CompletionAt
+                            WHERE 
+                                shelf_location = @Location;
+                          END
+                          ELSE IF @CommandType = 0
+                          BEGIN
+                                -- 出庫の場合：キャリアID、入庫時刻、予約をnullにする
+                                UPDATE shelves
+                                SET 
+                                stored_carrier_id = NULL,
+                                reservation = NULL,
+                                storage_at = NULL
+                                WHERE 
+                                    shelf_location = @Location;
                 END";
-                var parameters = new
+                await connection.ExecuteAsync(sql, new
                 {
                     CommandId = completion.CommandId,
                     CommandType = completion.CommandType,
@@ -240,8 +238,7 @@ public class SqlRepository
                     Location = completion.Location,
                     CommandStatus = completion.CommandStatus,
                     CompletionAt = CompletionAt
-                };
-                await connection.ExecuteAsync(sql, parameters);
+                });
             }
             catch (Exception)
             {
@@ -258,16 +255,14 @@ public class SqlRepository
             try
             {
                 var sql = @"
-                        SELECT shelf_location AS ShelfLocation,
-                        stored_carrier_id AS StoredCarrierId,
-                        reservation AS Reservation,
-                        storage_at AS StorageAt
-                        FROM shelves
-                        WHERE shelf_location LIKE @Prefix
-                        ; ";
+                          SELECT shelf_location AS ShelfLocation,
+                          stored_carrier_id AS StoredCarrierId,
+                          reservation AS Reservation,
+                          storage_at AS StorageAt
+                          FROM shelves
+                          WHERE shelf_location LIKE @Prefix; ";
 
-                var result = await connection.QueryAsync<Shelf>(sql, new { Prefix = prefix });
-                ShelfList = result.ToList();
+                return (await connection.QueryAsync<Shelf>(sql, new { Prefix = prefix })).ToList();
             }
             catch (Exception)
             {
@@ -275,6 +270,5 @@ public class SqlRepository
                 throw;
             }
         }
-        return ShelfList;
     }
 }

@@ -59,7 +59,10 @@ public class ShelfSystemController : ControllerBase
         try
         {
             await _service.InsertValidationAsync(newCommand);
-            return StatusCode(201, new { message = "搬送指示登録成功" });
+            return StatusCode(201, new 
+            { 
+                message = "搬送指示登録成功" 
+            });
         }
         catch (HttpRequestException ex)
         {
@@ -118,14 +121,14 @@ public class ShelfSystemController : ControllerBase
         }
     }
     [HttpPost("completion")]
-    public async Task<IActionResult> CompletionAsync([FromBody] EquipmentCommand completion)
+    public async Task<IActionResult> PostCompletionAsync([FromBody] EquipmentCommand completion)
     {
         try
         {
             DateTime completionAt = DateTime.Now;
             endPointName = HttpContext.Request.Path.Value.Split('/').Last();
             _service.UpdateEqpStatus(completion.EqpName, endPointName);
-            await _repository.UpdateStatusAndTimeAsync(completion, completionAt);
+            await _repository.UpdateCompletionAsync(completion, completionAt);
             if (completion.CommandType == 0)
             {
                 RelayCommand sendCommand = new()
@@ -144,7 +147,7 @@ public class ShelfSystemController : ControllerBase
         }
     }
     [HttpPost("incident")]
-    public async Task<IActionResult> PostIncidentAsync([FromBody] string eqpName)
+    public IActionResult PostIncident([FromBody] string eqpName)
     {
         try
         {
@@ -159,7 +162,7 @@ public class ShelfSystemController : ControllerBase
         }
     }
     [HttpPost("recovery")]
-    public async Task<IActionResult> PostRecoveryAsync([FromBody] string eqpName)
+    public IActionResult PostRecovery([FromBody] string eqpName)
     {
         try
         {

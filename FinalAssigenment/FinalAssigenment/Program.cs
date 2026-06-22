@@ -9,7 +9,7 @@ namespace FinalAssigenment;
 
 public class Program
 {
-    public static void Main(string[] args)
+    public static async Task Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
         builder.Services.AddOpenApi();
@@ -40,6 +40,16 @@ public class Program
         builder.Services.AddRazorPages();
 
         var app = builder.Build();
+        try
+        {
+            // app.Services から直接 Singleton のインスタンスを取り出して実行
+            var shelfService = app.Services.GetRequiredService<ShelfSystemService>();
+            await shelfService.GetAllEqpStateAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("【起動時通信テスト】想定通りに失敗しました！");
+        }
         if (app.Environment.IsDevelopment())
         {
             app.MapOpenApi();
@@ -67,6 +77,6 @@ public class Program
         app.MapRazorPages()
            .WithStaticAssets();
 
-        app.Run();
+        await app.RunAsync();
     }
 }
