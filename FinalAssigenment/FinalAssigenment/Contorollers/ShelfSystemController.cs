@@ -78,16 +78,19 @@ public class ShelfSystemController : ControllerBase
     {
         try
         {
+            _logger.LogInformation("[Info] 設備へ払出完了報告開始");
             _endPointName = HttpContext.Request.Path.Value.Split('/').Last();
             bool isValueCheck = await _service.UnloadValidationAsync(unload, _endPointName);
             if (!isValueCheck)
             {
                 return NotFound();
             }
+            _logger.LogInformation("[Info] 設備へ払出完了報告成功");
             return Ok();
         }
         catch (Exception)
         {
+            
             return StatusCode(500, "サーバへ払出完了報告失敗");
         }
     }
@@ -131,6 +134,7 @@ public class ShelfSystemController : ControllerBase
             await _repository.UpdateCompletionAsync(completion, completionAt);
             if (completion.CommandType == 0)
             {
+                _logger.LogInformation("[Info] スマホへ出庫完了報告開始");
                 RelayCommand sendCommand = new()
                 {
                     CommandId = completion.CommandId,
@@ -138,6 +142,7 @@ public class ShelfSystemController : ControllerBase
                     EqpName = completion.EqpName
                 };
                 await _service.PostHttpClientAsync(sendCommand, _endPointName);
+                _logger.LogInformation("[Info] スマホへ出庫完了報告成功");
             }
             return Ok();
         }

@@ -22,7 +22,7 @@ public class ShelfSystemService
         _repository = repository;
         _httpClient = httpClient;
     }
-
+    private readonly object _lockObject = new object();
     private List<EquipmentState> _eqpStatusList = [
             new(){EqpName = "EQP01", ControlState = 1, EquipmentStatus = 0, AlarmStatus = 0 },
             new(){EqpName = "EQP02", ControlState = 0, EquipmentStatus = 0, AlarmStatus = 0 },
@@ -46,10 +46,12 @@ public class ShelfSystemService
     {
         try
         {
+            _logger.LogInformation("[Info] 設備状態取得開始");
             var response = await _httpClient.GetAsync($"{url}/api/shelf-system/status");
 
             if (response.IsSuccessStatusCode)
             {
+                _logger.LogInformation("[Info] 設備状態取得成功");
                 var eqpState = await response.Content.ReadFromJsonAsync<EquipmentState>();
                 var targetEqp = _eqpStatusList.First(e => e.EqpName == eqpState.EqpName);
                 targetEqp.ControlState = eqpState.ControlState;
@@ -59,7 +61,8 @@ public class ShelfSystemService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"【通信失敗】{url} への接続に失敗しました。理由: {ex.Message}");
+            _logger.LogError(ex, "【[Error] 設備状態取得失敗");
+            throw;
         }
 
     }
@@ -137,22 +140,31 @@ public class ShelfSystemService
 
     public void UpdateEqpStatus(string eqpName, string endPoint)
     {
-        var targetEqp = _eqpStatusList.First(e => e.EqpName == eqpName);
-        if (endPoint == "online") targetEqp.ControlState = 1;
-        else if (endPoint == "start") targetEqp.EquipmentStatus = 1;
-        else if (endPoint == "completion") targetEqp.EquipmentStatus = 0;
-        else if (endPoint == "incident") targetEqp.AlarmStatus = 1;
-        else if (endPoint == "recovery") targetEqp.AlarmStatus = 0;
+        //同時に複数の設備機器の状態が遷移する可能性がある
+        lock (_lockObject)
+        {
+            var targetEqp = _eqpStatusList.First(e => e.EqpName == eqpName);
+            if (endPoint == "online") targetEqp.ControlState = 1;
+            else if (endPoint == "start") targetEqp.EquipmentStatus = 1;
+            else if (endPoint == "completion") targetEqp.EquipmentStatus = 0;
+            else if (endPoint == "incident") targetEqp.AlarmStatus = 1;
+            else if (endPoint == "recovery") targetEqp.AlarmStatus = 0;
+        }
     }
 
     public async Task<bool> UnloadValidationAsync(RelayCommand unload, string endPoint)
     {
-        if (unload.EqpName != "Eqp01" && unload.EqpName != "Eqp02" && unload.EqpName != "Eqp03")
+        var targetEqp = _eqpStatusList.FirstOrDefault(e => e.EqpName == unload.EqpName);
+        if (targetEqp == null) return false;
+        try
         {
-            return false;
+            await PostHttpClientAsync(unload, endPoint);
+            return true;
         }
-        await PostHttpClientAsync(unload, endPoint);
-        return true;
+        catch (Exception)
+        {
+            throw;
+        }
     }
 
     public async Task PostHttpClientAsync(RelayCommand sendCommand, string endPoint)
@@ -161,14 +173,22 @@ public class ShelfSystemService
         if (sendCommand.EqpName == "EQP01") url = _eqpBaseUrls[0];
         else if (sendCommand.EqpName == "EQP02") url = _eqpBaseUrls[1];
         else if (sendCommand.EqpName == "EQP03") url = _eqpBaseUrls[2];
-
         try
         {
             var response = await _httpClient.PostAsJsonAsync($"{url}/api/shelf-system/{endPoint}", sendCommand);
         }
-        catch (Exception)
+        catch(Exception ex)
         {
+            if(endPoint == "unload")
+            {
+                _logger.LogError(ex, "[Error] 設備へ払出完了報告失敗");
+            }
+            else if (endPoint == "completion")
+            {
+                _logger.LogError(ex, "[Error] スマホへ出庫完了報告失敗");
+            }
             throw;
         }
+        
     }
 }
