@@ -111,7 +111,7 @@ public class SqlRepository
             }
         }
     }
-    public async Task<EquipmentCommand> SelectCommandRequestAsync(string eqpName)
+    public async Task<EquipmentCommand> SelectCommandRequestAsync(string eqpName, DateTime sendAt)
     {
         using (var connection = new SqlConnection(connectionString))
         {
@@ -131,10 +131,10 @@ public class SqlRepository
                            command_type ASC,
                            reception_at ASC
                       )
-                      -- 送信時刻に「GETDATE()」を直接指定して、SQLの実行瞬間の時刻を記録
+                      -- 送信時刻と搬送指示状態を更新
                       UPDATE TargetCommand
                       SET 
-                        send_at = GETDATE(),
+                        send_at = @SendAt,
                         command_status = 1,
                         @SelectedId = command_id,
                         @SelectedType = command_type,
@@ -160,7 +160,11 @@ public class SqlRepository
                       FROM commands
                       WHERE command_id = @SelectedId;";
 
-                return await connection.QueryFirstOrDefaultAsync<EquipmentCommand>(sql, new { EqpName = eqpName });
+                return await connection.QueryFirstOrDefaultAsync<EquipmentCommand>(sql,new 
+                  { 
+                    EqpName = eqpName,
+                    SendAt = sendAt
+                  });
             }
             catch (Exception ex)
             {
@@ -289,6 +293,41 @@ public class SqlRepository
                 throw;
             }
 
+        }
+    }
+
+    public async Task UpdateTimeOutAsync(EquipmentCommand sendCommand)
+    {
+        using var connection = new SqlConnection(connectionString);
+
+        try
+        {
+            var sql = @"
+              -- 該当する搬送指示を異常完了にする
+              UPDATE commands 
+              SET command_status = 3 
+              WHERE command_id = @CommandId and command_status IN (0,1);
+
+              -- 出庫なら、棚の予約とキャリアIDをnullにする
+              IF @CommandType = 0
+              BEGIN
+                  UPDATE shelves 
+                  SET stored_carrier_id = NULL, 
+                      reservation = NULL 
+                  WHERE shelf_location = @Location;
+              END";
+
+            await connection.ExecuteAsync(sql, new
+            {
+                CommandId = sendCommand.CommandId,
+                Location = sendCommand.Location,
+                CommandType = sendCommand.CommandType
+            });
+        }
+        catch (SqlException ex)
+        {
+            _logger.LogError(ex, "[Error] DB接続異常");
+            throw;
         }
     }
 }
