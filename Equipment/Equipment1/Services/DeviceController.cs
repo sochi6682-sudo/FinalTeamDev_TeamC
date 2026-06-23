@@ -44,12 +44,13 @@ public class DeviceController
     }
 
     //報告用状態作成　
+    //-------------------------------------------------------------------------------
     private StateReport CreateStateReport()
     {
         StateReport report = new StateReport();
-
         report.EqpName = _state.EqpName;
 
+        //通信状態変換
         if (_state.CommunicationStatus == CommunicationStatus.Online)
         {
             report.ControlState = ControlState.Online;
@@ -59,6 +60,7 @@ public class DeviceController
             report.ControlState = ControlState.Offline;
         }
 
+        //設備状態変換
         if (_state.CommandReceptionStatus == CommandReceptionStatus.Active)
         {
             report.EquipmentStatus = EquipmentStatus.Active;
@@ -68,6 +70,7 @@ public class DeviceController
             report.EquipmentStatus = EquipmentStatus.Idle;
         }
 
+        //異常状態変換
         if (_state.LocalAlarmStatus == LocalAlarmStatus.Alarm)
         {
             report.AlarmStatus = AlarmStatus.Alarm;
@@ -78,6 +81,7 @@ public class DeviceController
         }
 
         return report;
+
     }
 
 

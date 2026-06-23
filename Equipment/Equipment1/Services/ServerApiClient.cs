@@ -19,7 +19,6 @@ public class ServerApiClient
     }
 
 
-
     //搬送指示要求 GET(ポーリング)
     //-------------------------------------------------------------------------------
     public async Task<HttpResponseMessage?> GetCommandAsync(string eqpName)
@@ -59,7 +58,6 @@ public class ServerApiClient
     }
 
 
-
     //設備ONLINE報告 POST 
     //-------------------------------------------------------------------------------
     public async Task ReportOnlineAsync(StateReport stateReport)
@@ -67,7 +65,6 @@ public class ServerApiClient
         Logger.Info("設備ONLINE報告POST 開始");
         await PostAsync("/api/shelf-system/online", stateReport);
     }
-
 
 
     //搬送指示開始報告 POST
@@ -78,7 +75,6 @@ public class ServerApiClient
         command.CommandStatus = 1;
         await PostAsync("/api/shelf-system/start",command);
     }
-
 
 
     //搬送指示完了報告(正常) POST
@@ -114,7 +110,6 @@ public class ServerApiClient
     }
 
 
-
     //異常復旧報告 POST
     //-------------------------------------------------------------------------------
     public async Task ReportRecoveryAsync(string eqpName)
@@ -126,8 +121,6 @@ public class ServerApiClient
                 EqpName = eqpName
             });
     }
-
-
 
 
 }

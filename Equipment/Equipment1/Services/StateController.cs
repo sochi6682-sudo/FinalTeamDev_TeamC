@@ -28,7 +28,6 @@ public class StateController
         Logger.Info("異常状態：NO ALARM");
         Logger.Info("動作状態：STOP");
         Logger.Info("出庫可能状態");
-
     }
 
     public void SetCommunicationOnline()
