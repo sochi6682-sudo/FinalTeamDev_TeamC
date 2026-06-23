@@ -4,6 +4,7 @@ using System.ComponentModel.Design;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 
 namespace FinalAssigenment.Services;
 
@@ -21,22 +22,23 @@ public class ShelfSystemService
         _repository = repository;
         _httpClient = httpClient;
     }
-
-    public List<EquipmentState> eqpStatusList = [
-            new(){EqpName = "EQP01", ControlState = 1, EquipmentStatus = 0, AlarmStatus = 0 },
+    private readonly object _lockObject = new object();
+    private List<EquipmentState> _eqpStatusList = [
+            new(){EqpName = "EQP01", ControlState = 0, EquipmentStatus = 0, AlarmStatus = 0 },
             new(){EqpName = "EQP02", ControlState = 0, EquipmentStatus = 0, AlarmStatus = 0 },
             new(){EqpName = "EQP03", ControlState = 0, EquipmentStatus = 0, AlarmStatus = 0}
         ];
 
-    private readonly List<string> eqpBaseUrls = [
+    private readonly List<string> _eqpBaseUrls = [
             "http://localhost:8090",
             "http://localhost:8091",
             "http://localhost:8092"
         ];
+    public List<EquipmentState> EqpStatusList => _eqpStatusList;
 
     public async Task GetAllEqpStateAsync()
     {
-        List<Task> tasks = eqpBaseUrls.Select(u => GetEqpStateAsync(u)).ToList();
+        List<Task> tasks = _eqpBaseUrls.Select(u => GetEqpStateAsync(u)).ToList();
 
         await Task.WhenAll(tasks);
     }
@@ -44,20 +46,28 @@ public class ShelfSystemService
     {
         try
         {
+            _logger.LogInformation("[Info] 設備状態取得開始");
             var response = await _httpClient.GetAsync($"{url}/api/shelf-system/status");
 
             if (response.IsSuccessStatusCode)
             {
+                _logger.LogInformation("[Info] 設備状態取得成功");
                 var eqpState = await response.Content.ReadFromJsonAsync<EquipmentState>();
-                var targetEqp = eqpStatusList.First(e => e.EqpName == eqpState.EqpName);
-                targetEqp.ControlState = eqpState.ControlState;
-                targetEqp.AlarmStatus = eqpState.AlarmStatus;
-
+                lock (_lockObject)
+                {
+                    var targetEqp = _eqpStatusList.First(e => e.EqpName == eqpState.EqpName);
+                    targetEqp.ControlState = eqpState.ControlState;
+                    _logger.LogInformation("[Info] ControlState : ON-LINE");
+                    targetEqp.AlarmStatus = eqpState.AlarmStatus;
+                    if(targetEqp.AlarmStatus == 1) _logger.LogInformation("[Info] AlarmStatus : ALARM");
+                    else _logger.LogInformation("[Info] AlarmStatus : NO ALARM");
+                }
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"【通信失敗】{url} への接続に失敗しました。理由: {ex.Message}");
+            _logger.LogError(ex, "【[Error] 設備状態取得失敗");
+            throw;
         }
 
     }
@@ -67,11 +77,11 @@ public class ShelfSystemService
         {
             throw new HttpRequestException("キャリアID の命名規則が不正です。", null, System.Net.HttpStatusCode.BadRequest);
         }
-        if (newCommand.EqpName != "EQP01" && newCommand.EqpName != "EQP02" && newCommand.EqpName != "EQP03")
+        var targetEqp = _eqpStatusList.FirstOrDefault(e => e.EqpName == newCommand.EqpName);
+        if (targetEqp == null)
         {
             throw new HttpRequestException("設備IDが存在しません。", null, System.Net.HttpStatusCode.NotFound);
         }
-        var targetEqp = eqpStatusList.First(e => e.EqpName == newCommand.EqpName);
         if (targetEqp.ControlState == 0)
         {
             throw new HttpRequestException("指定された設備がOFFLINEです。", null, HttpStatusCode.BadRequest);
@@ -79,35 +89,34 @@ public class ShelfSystemService
 
         string availableLocation = "";
         string prefix = "";
-        if (newCommand.EqpName == "EQP01") { prefix = "1%"; }
-        else if (newCommand.EqpName == "EQP02") { prefix = "2%"; }
-        else if (newCommand.EqpName == "EQP03") { prefix = "3%"; }
-        var shelfList = await _repository.GetShelfAsync(prefix);
-        bool isCarrierAlreadyStored = shelfList.Any(s => s.StoredCarrierId == newCommand.CarrierId);
-        Shelf? selectedInShelf = shelfList.FirstOrDefault(s => s.StoredCarrierId == null);
-        bool isAllEmpty = shelfList.Any(s => s.StoredCarrierId != null);
-        Shelf? matchedShelf = shelfList.FirstOrDefault(s => s.StoredCarrierId == newCommand.CarrierId);
+        if (newCommand.EqpName == "EQP01") prefix = "1%"; 
+        else if (newCommand.EqpName == "EQP02") prefix = "2%"; 
+        else if (newCommand.EqpName == "EQP03") prefix = "3%";
+        var (shelfList, incompleteCommandList) = await _repository.SelectShelfInformationAsync(prefix);
         if (newCommand.CommandType == 1)
         {
+            bool isCarrierAlreadyStored = shelfList.Any(s => s.StoredCarrierId == newCommand.CarrierId)
+                                          || incompleteCommandList.Any(c => c.CarrierId == newCommand.CarrierId);
             if (isCarrierAlreadyStored)
             {
                 throw new HttpRequestException("指定されたキャリアIDは既に入庫されています。", null, HttpStatusCode.BadRequest);
             }
+            var selectedInShelf = shelfList.Where(s => s.StoredCarrierId == null)
+                              .FirstOrDefault(s => !incompleteCommandList.Any(c => c.Location == s.ShelfLocation));
             if (selectedInShelf == null)
             {
                 throw new HttpRequestException("棚が満帆のため入庫できません。", null, HttpStatusCode.BadRequest);
             }
-            else if (selectedInShelf != null)
-            {
-                availableLocation = selectedInShelf.ShelfLocation;
-            }
+            availableLocation = selectedInShelf.ShelfLocation;
         }
         else
         {
+            bool isAllEmpty = shelfList.Any(s => s.StoredCarrierId != null);
             if (!isAllEmpty)
             {
                 throw new HttpRequestException("棚が空のため出庫できません。", null, HttpStatusCode.BadRequest);
             }
+            var matchedShelf = shelfList.FirstOrDefault(s => s.StoredCarrierId == newCommand.CarrierId);
             if (matchedShelf == null)
             {
                 throw new HttpRequestException("指定されたキャリアIDは棚に存在しません。", null, HttpStatusCode.NotFound);
@@ -136,38 +145,95 @@ public class ShelfSystemService
 
     public void UpdateEqpStatus(string eqpName, string endPoint)
     {
-        var targetEqp = eqpStatusList.First(e => e.EqpName == eqpName);
-        if (endPoint == "online") targetEqp.ControlState = 1;
-        else if (endPoint == "start") targetEqp.EquipmentStatus = 1;
-        else if (endPoint == "completion") targetEqp.EquipmentStatus = 0;
-        else if (endPoint == "incident") targetEqp.AlarmStatus = 1;
-        else if (endPoint == "recovery") targetEqp.AlarmStatus = 0;
+        //同時に複数の設備機器の状態が遷移する可能性がある
+        lock (_lockObject)
+        {
+            var targetEqp = _eqpStatusList.First(e => e.EqpName == eqpName);
+
+            if (endPoint == "online")
+            {
+                targetEqp.ControlState = 1;
+                _logger.LogInformation("[Info] ControlState : ON-LINE"); 
+            }
+            else if (endPoint == "start")
+            {
+                targetEqp.EquipmentStatus = 1;
+                _logger.LogInformation("[Info] EquipmentStatus : ACTIVE");
+            }
+            else if (endPoint == "completion")
+            {
+                targetEqp.EquipmentStatus = 0;
+                _logger.LogInformation("[Info] EquipmentStatus : IDLE"); 
+            }
+            else if (endPoint == "incident")
+            {
+                targetEqp.AlarmStatus = 1;
+                _logger.LogInformation("[Info] AlarmStatus : ALARM");
+            }
+            else if (endPoint == "recovery")
+            {
+                targetEqp.AlarmStatus = 0;
+                _logger.LogInformation("[Info] AlarmStatus : NO ALARM"); 
+            }
+        }
     }
 
     public async Task<bool> UnloadValidationAsync(RelayCommand unload, string endPoint)
     {
-        if (unload.EqpName != "Eqp01" && unload.EqpName != "Eqp02" && unload.EqpName != "Eqp03")
-        {
-            return false;
-        }
-        await PostHttpClientAsync(unload, endPoint);
-        return true;
-    }
-
-    public async Task PostHttpClientAsync(RelayCommand sendCommand, string endPoint)
-    {
-        string url = "";
-        if (sendCommand.EqpName == "EQP01") url = eqpBaseUrls[0];
-        else if (sendCommand.EqpName == "EQP02") url = eqpBaseUrls[1];
-        else if (sendCommand.EqpName == "EQP03") url = eqpBaseUrls[2];
-
+        var targetEqp = _eqpStatusList.FirstOrDefault(e => e.EqpName == unload.EqpName);
+        if (targetEqp == null) return false;
         try
         {
-            var response = await _httpClient.PostAsJsonAsync($"{url}/api/shelf-system/{endPoint}", sendCommand);
+            await PostHttpClientAsync(unload, endPoint);
+            return true;
         }
         catch (Exception)
         {
             throw;
         }
+    }
+
+    public async Task PostHttpClientAsync(RelayCommand sendCommand, string endPoint)
+    {
+        string url = "";
+        if (sendCommand.EqpName == "EQP01") url = _eqpBaseUrls[0];
+        else if (sendCommand.EqpName == "EQP02") url = _eqpBaseUrls[1];
+        else if (sendCommand.EqpName == "EQP03") url = _eqpBaseUrls[2];
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync($"{url}/api/shelf-system/{endPoint}", sendCommand);
+        }
+        catch(Exception ex)
+        {
+            if(endPoint == "unload")
+            {
+                _logger.LogError(ex, "[Error] 設備へ払出完了報告失敗");
+            }
+            else if (endPoint == "completion")
+            {
+                _logger.LogError(ex, "[Error] スマホへ出庫完了報告失敗");
+            }
+            throw;
+        }
+    }
+
+    public void TimeoutOccurred(EquipmentCommand sendCommand)
+    {
+        Task task = Task.Run(async() =>
+        {
+            await Task.Delay(30000);
+            await _repository.UpdateTimeOutAsync(sendCommand);
+            lock (_lockObject)
+            {
+                var targetEqp = _eqpStatusList.FirstOrDefault(e => e.EqpName == sendCommand.EqpName);
+                if (targetEqp != null)
+                {
+                    targetEqp.ControlState = 0;
+                    _logger.LogInformation("[Info] ControlState : OFF-LINE");
+                }
+                Console.WriteLine("タイムアウトしました。");
+            }
+        });
+
     }
 }
