@@ -13,7 +13,9 @@ public class DeviceController
 
     private readonly State _state;
     private readonly ServerApiClient _apiClient;
-    
+    private readonly StateController _stateController;
+    private readonly ConsoleView _consoleView;
+
     private DateTime? _onlineStartTime;
     private Command? _currentCommand;
 
@@ -21,48 +23,34 @@ public class DeviceController
     {
         _state = new State();
         _apiClient = new ServerApiClient();
+        _stateController = new StateController(_state);
+        _consoleView = new ConsoleView();
+
         _currentCommand = null;
     }
 
     //プロパティ
+    //-------------------------------------------------------------------------------
+    //状態取出
     public State CurrentState
     {
         get { return _state; }
     }
 
-
-
-    //起動時1回だけ処理　
-    //-------------------------------------------------------------------------------
-    public async Task InitAsync() 
+    //報告用状態受渡
+    public StateReport GetStateReport()
     {
-        //状態初期化
-        _state.CommunicationStatus = CommunicationStatus.Offline;　
-        _state.CommandReceptionStatus = CommandReceptionStatus.Idle;
-        _state.LocalAlarmStatus = LocalAlarmStatus.NoAlarm;
-        _state.OperatingStatus = OperatingStatus.Stop;
-        _state.RetrieveAvailability = RetrieveAvailability.Available;
-        Logger.Info("サーバー通信状態：OFF-LINE");
-        Logger.Info("指示実行状態：IDLE");
-        Logger.Info("異常状態：NO ALARM");
-        Logger.Info("動作状態：STOP");
-        Logger.Info("出庫可能状態");
-
-        StateReport report = CreateStateReport();
-
-        await _apiClient.ReportOnlineAsync(report);
-
+        return CreateStateReport();
     }
 
- 
     //報告用状態作成　
     //-------------------------------------------------------------------------------
     private StateReport CreateStateReport()
     {
         StateReport report = new StateReport();
-
         report.EqpName = _state.EqpName;
 
+        //通信状態変換
         if (_state.CommunicationStatus == CommunicationStatus.Online)
         {
             report.ControlState = ControlState.Online;
@@ -72,6 +60,7 @@ public class DeviceController
             report.ControlState = ControlState.Offline;
         }
 
+        //設備状態変換
         if (_state.CommandReceptionStatus == CommandReceptionStatus.Active)
         {
             report.EquipmentStatus = EquipmentStatus.Active;
@@ -81,6 +70,7 @@ public class DeviceController
             report.EquipmentStatus = EquipmentStatus.Idle;
         }
 
+        //異常状態変換
         if (_state.LocalAlarmStatus == LocalAlarmStatus.Alarm)
         {
             report.AlarmStatus = AlarmStatus.Alarm;
@@ -91,13 +81,24 @@ public class DeviceController
         }
 
         return report;
+
     }
 
-    //状態受渡
+
+    //起動時1回だけ処理　
     //-------------------------------------------------------------------------------
-    public StateReport GetStateReport()
+    public async Task InitAsync() 
     {
-        return CreateStateReport();
+        _consoleView.ShowInfo("保管設備起動");
+        Logger.Info("保管設備起動");
+
+        //状態初期化
+        _stateController.InitStatus();
+
+        //ON-LINE報告POST送信
+        StateReport report = CreateStateReport();　
+        await _apiClient.ReportOnlineAsync(report);
+
     }
 
 
@@ -105,65 +106,62 @@ public class DeviceController
     //-------------------------------------------------------------------------------
     public async Task RunIdleLoopAsync()
     {
-        
-        HttpResponseMessage? response = await _apiClient.GetCommandAsync();
+        //搬送指示要求GET送信
+        HttpResponseMessage? response = await _apiClient.GetCommandAsync(_state.EqpName);
 
-        if (response == null)
+        //通信成功/失敗
+        if (response == null)　
         {
-            // 通信失敗
-            Logger.Error("搬送指示要求GET 失敗");
-
-            _state.CommunicationStatus = CommunicationStatus.Offline;
-            _state.LocalAlarmStatus = LocalAlarmStatus.Alarm;
-            UpdateOperatingStatus();
-            Logger.Info("サーバー通信状態：OFF-LINE");
-            Logger.Info("異常状態：ALARM");
+            // 通信異常：OFF-LINE・IDLE・ALARM状態へ
+            _stateController.SetCommunicationOffline();
+            _stateController.SetAlarm();
 
             await _apiClient.ReportAlarmAsync(_state.EqpName);
 
+            Logger.Error("搬送指示要求GET 失敗");
         }
         else 
         {
-
-            if (!response.IsSuccessStatusCode)
+            // 通信成功：200/200以外
+            if (!response.IsSuccessStatusCode)　
             {
-                // 200以外
-                Logger.Warn($"搬送指示要求GET 失敗 StatusCode={(int)response.StatusCode}");
-
-                _state.CommunicationStatus = CommunicationStatus.Offline;
-                _state.LocalAlarmStatus = LocalAlarmStatus.Alarm;
-                UpdateOperatingStatus();
-                Logger.Info("サーバー通信状態：OFF-LINE");
-                Logger.Info("異常状態：ALARM");
+                // 200以外：OFF-LINE・IDLE・ALARM状態へ
+                _stateController.SetCommunicationOffline();
+                _stateController.SetAlarm();
 
                 await _apiClient.ReportAlarmAsync(_state.EqpName);
+
+                _consoleView.ShowAlarm("※　通信異常発生　※");
+                Logger.Warn($"搬送指示要求GET 失敗 StatusCode={(int)response.StatusCode}");
+
             }
             else
             {
+                //通信成功
                 //レスポンスをcommandに入れる
                 Command? command = await response.Content.ReadFromJsonAsync<Command>();
 
-                if (command == null || string.IsNullOrEmpty(command.CommandId))
+                //指示あり/なし
+                if (command == null || string.IsNullOrEmpty(command.CommandId))　
                 {
-                    // 200だけど指示なし
-                    Logger.Info("搬送指示要求GET 搬送指示なし");
-                    _state.CommunicationStatus = CommunicationStatus.Online;
-                    UpdateOperatingStatus();
-                    Logger.Info("サーバー通信状態：ON-LINE");
-                }
-                else
-                {
-                    // 200かつ指示あり
-                    Logger.Info("搬送指示要求GET 搬送指示受信");
-                    _state.CommunicationStatus = CommunicationStatus.Online;
-                    _state.CommandReceptionStatus = CommandReceptionStatus.Active;
-                    UpdateOperatingStatus();
-                    Logger.Info("サーバー通信状態：ON-LINE");
-                    Logger.Info("指示実行状態：ACTIVE");
+                    // 200だけど指示なし　ON-LINE状態へ
+                    _stateController.SetCommunicationOnline();
 
-                    _currentCommand = command;
+                    Logger.Info("搬送指示要求GET 搬送指示なし");
+                }
+                else　
+                {
+                    // 200かつ指示あり　ON-LINE・ACTIVE状態へ
+                    _stateController.SetCommunicationOnline();
+                    _stateController.SetActive();
+
+                    _currentCommand = command; //実行中搬送指示更新
+
                     await _apiClient.ReportStartAsync(command);
-                    
+
+                    _consoleView.ShowInfo("搬送指示受信");
+                    _consoleView.ShowCommand(_currentCommand);
+                    Logger.Info("搬送指示要求GET 搬送指示受信");
                 }
             }
         }
@@ -177,27 +175,32 @@ public class DeviceController
     //-------------------------------------------------------------------------------
     public async Task RunBusyProcessAsync()
     {
+        //実行中指示あり/なし
         if (_currentCommand == null)
         {
             //指示なし
             return;
         }
-        
+
+        _consoleView.ShowInfo("動作開始");
+        _consoleView.ShowCommand(_currentCommand);
+
+        //入庫/出庫
         if (_currentCommand.CommandType == 0)
         {
-            //入庫であればすぐに正常/異常完了選択処理へ
+            //入庫：正常/異常完了選択処理へ
             await SelectCompleteResult();
         }
         else
         {
-            //出庫であれば、出庫可能状態になったら正常/異常完了選択処理へ
+            //出庫：出庫可能状態まで待ち、正常/異常完了選択処理へ
             while (_state.RetrieveAvailability != RetrieveAvailability.Available)
             {
                 await Task.Delay(100);
             }
-                await SelectCompleteResult();
-
+            await SelectCompleteResult();
         }
+
     }
 
 
@@ -208,31 +211,25 @@ public class DeviceController
     {
         while (true)
         {
-            //正常/異常か選択させる
-            Console.WriteLine("結果を選択してください");
-            Console.WriteLine("1 : 正常完了");
-            Console.WriteLine("2 : 異常完了");
-            Console.WriteLine("==================================================");
-
+            //１）正常/異常　選択
+            _consoleView.ShowSelectCompleteInput();
             string? input = Console.ReadLine();
 
+            //２）正常完了：IDLEになって報告し、実行した指示を消す
             if (input == "1")
             {
+                _consoleView.ShowSuccess("正常完了");
                 Logger.Info("正常完了選択");
-                Console.WriteLine("正常完了");
-                Console.WriteLine("==================================================");
 
-                //正常完了であれば、IDLEになって報告し、実行した指示を消す
                 //出庫であれば出庫不可に移行する
                 if (_currentCommand?.CommandType == 1)
                 {
-                    _state.RetrieveAvailability = RetrieveAvailability.Unavailable;
-                    Logger.Info("出庫不可状態");
+                    _stateController.SetRetrieveUnavailable();
+
+                    _consoleView.ShowInfo("出庫不可状態 待機中");
                 }
 
-                _state.CommandReceptionStatus = CommandReceptionStatus.Idle;
-                UpdateOperatingStatus();
-                Logger.Info("指示実行状態：IDLE");
+                _stateController.SetIdle();
 
                 await _apiClient.ReportCommandCompleteAsync(_currentCommand!);
 
@@ -241,29 +238,27 @@ public class DeviceController
                 break;
             }
 
+            //３）異常完了：IDLE・ALARMになって報告し、実行した指示を消す
             if (input == "2")
             {
+                _consoleView.ShowAlarm("異常完了");
                 Logger.Info("異常完了選択");
-                Console.WriteLine("異常完了");
-                Console.WriteLine("==================================================");
 
-                //異常完了であれば、IDLE・ALARMになって報告し、実行した指示を消す
-                _state.CommandReceptionStatus = CommandReceptionStatus.Idle;
-                _state.LocalAlarmStatus = LocalAlarmStatus.Alarm;
-                UpdateOperatingStatus();
-                Logger.Info("指示実行状態：IDLE");
-                Logger.Info("異常状態：ALARM");
+                _stateController.SetIdle();
+                _stateController.SetAlarm();
 
                 await _apiClient.ReportCommandFailedAsync(_currentCommand!);
                 await _apiClient.ReportAlarmAsync(_state.EqpName);
 
+                _consoleView.ShowAlarm("※　設備異常発生　※");
+                
                 _currentCommand = null;
 
                 break;
             }
 
-            Console.WriteLine("入力エラーです。1 または 2 を入力してください。");
-            Console.WriteLine("==================================================");
+            //４）１・２以外入力
+            _consoleView.ShowInfo("入力エラーです。1 または 2 を入力してください。");
 
         }
     }
@@ -274,46 +269,32 @@ public class DeviceController
 
     public async Task RunAlarmProcessAsync()
     {
-        //ONLINE状態5秒経過
+        //ONLINE/OFFLINE
         if (_state.CommunicationStatus == CommunicationStatus.Online)
         {
+            //ONLINE
             if (_onlineStartTime == null)
             {
+                //ONLINE検知時間記録
                 _onlineStartTime = DateTime.Now;
             }
 
             if (DateTime.Now - _onlineStartTime >= TimeSpan.FromSeconds(5))
             {
-                _state.LocalAlarmStatus = LocalAlarmStatus.NoAlarm;
-                Logger.Info("異常状態：NO ALARM");
-                UpdateOperatingStatus();
+                //ONLINE状態5秒経過　異常解除
+                _stateController.ClearAlarm();
+
+                await _apiClient.ReportRecoveryAsync(_state.EqpName);
+
+                _consoleView.ShowInfo("異常解除");
 
                 _onlineStartTime = null;
-                await _apiClient.ReportRecoveryAsync(_state.EqpName);
-                
             }
         }
         else
         {
+            //OFFLINE
             _onlineStartTime = null;
-        }
-    }
-
-
-    //動作状態更新
-    //-------------------------------------------------------------------------------
-    private void UpdateOperatingStatus()
-    {
-        if (_state.CommandReceptionStatus == CommandReceptionStatus.Active &&
-            _state.LocalAlarmStatus == LocalAlarmStatus.NoAlarm)
-        {
-            Logger.Info("動作状態：BUSY");
-            _state.OperatingStatus = OperatingStatus.Busy;
-        }
-        else
-        {
-            Logger.Info("動作状態：STOP");
-            _state.OperatingStatus = OperatingStatus.Stop;
         }
     }
 
@@ -322,8 +303,10 @@ public class DeviceController
     //-------------------------------------------------------------------------------
     public void SetRetrieveAvailable()
     {
-        _state.RetrieveAvailability = RetrieveAvailability.Available;
-        Logger.Info("出庫可能状態になりました");
+        _stateController.SetRetrieveAvailable();
+
+        _consoleView.ShowInfo("出庫可能");
+
     }
 
 
