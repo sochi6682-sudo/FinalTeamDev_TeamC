@@ -22,16 +22,18 @@ public class ServerApiClient
 
     //搬送指示要求 GET(ポーリング)
     //-------------------------------------------------------------------------------
-    public async Task<HttpResponseMessage?> GetCommandAsync()
+    public async Task<HttpResponseMessage?> GetCommandAsync(string eqpName)
     {
         Logger.Info("搬送指示要求GET 開始");
 
         try
         {
-            return await _httpClient.GetAsync("/api/shelf-system/request");
+            return await _httpClient.GetAsync(
+                $"/api/shelf-system/request?eqpName={eqpName}");
         }
         catch (Exception ex)
         {
+            Logger.Error(ex, "搬送指示要求GET例外");
             return null;
         }
     }

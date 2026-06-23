@@ -10,8 +10,6 @@ internal class Program
 
     static async Task Main(string[] args)
     {
-        Console.WriteLine("保管設備１起動");
-        Logger.Info("保管設備１起動");
 
         DeviceController controller = new DeviceController();
         DeviceHttpListener listener = new DeviceHttpListener(controller);

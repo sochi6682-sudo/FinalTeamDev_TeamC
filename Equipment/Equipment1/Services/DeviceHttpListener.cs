@@ -80,6 +80,7 @@ public class DeviceHttpListener
             //４）404返送
             Logger.Warn($"未定義API受信 Method={method} Path={path}");
             await WriteResponseAsync(context, 404, "Not Found");
+
         }
         catch (Exception ex)
         {
@@ -96,6 +97,7 @@ public class DeviceHttpListener
             }
         }
     }
+
 
     // ３－１）EQP状態取得 GET受信処理
     //-------------------------------------------------------------------------------
@@ -124,7 +126,9 @@ public class DeviceHttpListener
 
         //４）200返送
         await WriteResponseAsync(context, 200, "OK");
+
     }
+
 
     //４）HTTPレスポンス返送処理
     //-------------------------------------------------------------------------------
