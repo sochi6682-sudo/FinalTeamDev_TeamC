@@ -23,16 +23,6 @@ public class Program
             options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
          });
 
-        builder.Services.AddCors(options =>
-        {
-            options.AddPolicy("AllowFetch", policy =>
-            {
-                policy
-                    .WithOrigins("")
-                    .AllowAnyHeader()
-                    .AllowAnyMethod();
-            });
-        });
         builder.Logging.ClearProviders();
         builder.Host.UseNLog();
         builder.Services.AddHttpClient();

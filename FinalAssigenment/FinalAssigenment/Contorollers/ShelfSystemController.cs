@@ -23,7 +23,7 @@ public class ShelfSystemController : ControllerBase
         _repository = repository;
         _service = service;
     }
-    private string endPointName;
+    private string _endPointName;
 
     [HttpGet]
     public async Task<IActionResult> GetInformationAsync()
@@ -31,12 +31,12 @@ public class ShelfSystemController : ControllerBase
         try
         {
             var systemInfo = await _repository.SelectInfomationAsync();
-            systemInfo.Status = _service.eqpStatusList;
+            systemInfo.Status = _service.EqpStatusList;
             return Ok(systemInfo);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return StatusCode(500, "情報取得失敗");
+            return StatusCode(500, $"情報取得失敗{ex.ToString()}");
         }
     }
     [HttpGet("request")]
@@ -44,7 +44,7 @@ public class ShelfSystemController : ControllerBase
     {
         try
         {
-            var sendCommand = await _repository.GetCommandRequestAsync(epqName);
+            var sendCommand = await _repository.SelectCommandRequestAsync(epqName);
 
             return Ok(sendCommand);
         }
@@ -78,8 +78,8 @@ public class ShelfSystemController : ControllerBase
     {
         try
         {
-            endPointName = HttpContext.Request.Path.Value.Split('/').Last();
-            bool isValueCheck = await _service.UnloadValidationAsync(unload, endPointName);
+            _endPointName = HttpContext.Request.Path.Value.Split('/').Last();
+            bool isValueCheck = await _service.UnloadValidationAsync(unload, _endPointName);
             if (!isValueCheck)
             {
                 return NotFound();
@@ -96,8 +96,8 @@ public class ShelfSystemController : ControllerBase
     {
         try
         {
-            endPointName = HttpContext.Request.Path.Value.Split('/').Last();
-            _service.UpdateEqpStatus(online.EqpName, endPointName);
+            _endPointName = HttpContext.Request.Path.Value.Split('/').Last();
+            _service.UpdateEqpStatus(online.EqpName, _endPointName);
             return Ok();
         }
         catch (Exception)
@@ -110,8 +110,8 @@ public class ShelfSystemController : ControllerBase
     {
         try
         {
-            endPointName = HttpContext.Request.Path.Value.Split('/').Last();
-            _service.UpdateEqpStatus(start.EqpName, endPointName);
+            _endPointName = HttpContext.Request.Path.Value.Split('/').Last();
+            _service.UpdateEqpStatus(start.EqpName, _endPointName);
             await _repository.UpdateCommandStatusAsync(start.CommandId, (int)start.CommandStatus);
             return Ok();
         }
@@ -126,8 +126,8 @@ public class ShelfSystemController : ControllerBase
         try
         {
             DateTime completionAt = DateTime.Now;
-            endPointName = HttpContext.Request.Path.Value.Split('/').Last();
-            _service.UpdateEqpStatus(completion.EqpName, endPointName);
+            _endPointName = HttpContext.Request.Path.Value.Split('/').Last();
+            _service.UpdateEqpStatus(completion.EqpName, _endPointName);
             await _repository.UpdateCompletionAsync(completion, completionAt);
             if (completion.CommandType == 0)
             {
@@ -137,7 +137,7 @@ public class ShelfSystemController : ControllerBase
                     CarrierId = completion.CarrierId,
                     EqpName = completion.EqpName
                 };
-                await _service.PostHttpClientAsync(sendCommand, endPointName);
+                await _service.PostHttpClientAsync(sendCommand, _endPointName);
             }
             return Ok();
         }
@@ -152,8 +152,8 @@ public class ShelfSystemController : ControllerBase
         try
         {
             if (string.IsNullOrWhiteSpace(eqpName)) return BadRequest("eqpNameが未入力です。");
-            endPointName = HttpContext.Request.Path.Value.Split('/').Last();
-            _service.UpdateEqpStatus(eqpName, endPointName);
+            _endPointName = HttpContext.Request.Path.Value.Split('/').Last();
+            _service.UpdateEqpStatus(eqpName, _endPointName);
             return Ok();
         }
         catch (Exception)
@@ -167,8 +167,8 @@ public class ShelfSystemController : ControllerBase
         try
         {
             if (string.IsNullOrWhiteSpace(eqpName)) return BadRequest("eqpNameが未入力です。");
-            endPointName = HttpContext.Request.Path.Value.Split('/').Last();
-            _service.UpdateEqpStatus(eqpName, endPointName);
+            _endPointName = HttpContext.Request.Path.Value.Split('/').Last();
+            _service.UpdateEqpStatus(eqpName, _endPointName);
             return Ok();
         }
         catch (Exception)

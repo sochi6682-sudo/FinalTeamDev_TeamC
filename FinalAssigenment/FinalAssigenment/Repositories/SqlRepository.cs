@@ -17,7 +17,7 @@ public class SqlRepository
         _logger = logger;
     }
 
-    private SystemInformation GetResultInfomation;
+    private SystemInformation _getResultInfomation;
 
     public async Task<SystemInformation> SelectInfomationAsync()
     {
@@ -26,7 +26,7 @@ public class SqlRepository
             try
             {
                 var sql = @"
-                          //搬送指示の未完了を全件、完了を100件取得
+                          -- 搬送指示の未完了を全件、完了を100件取得
                           SELECT 
                           command_id AS CommandId,
                           command_type AS CommandType,
@@ -44,7 +44,7 @@ public class SqlRepository
                           TOP(100) * FROM commands
                           WHERE command_status IN (2,3)
                           ORDER BY completion_at DESC;
-                          //棚の情報を全件取得
+                          -- 棚の情報を全件取得
                           SELECT 
                           shelf_location AS ShelfLocation,
                           stored_carrier_id AS StoredCarrierId,
@@ -56,14 +56,14 @@ public class SqlRepository
                 var commands = (await multi.ReadAsync<Command>()).ToList();
                 var shelves = (await multi.ReadAsync<Shelf>()).ToList();
 
-                GetResultInfomation = new()
+                _getResultInfomation = new()
                 {
                     Status = [],
                     Commands = commands,
                     Shelves = shelves
                 };
 
-                return GetResultInfomation;
+                return _getResultInfomation;
             }
             catch (Exception)
             {
@@ -99,7 +99,6 @@ public class SqlRepository
                             WHERE shelf_location = @Location;
                           END";
 
-                // C#側は結果を受け取らないので ExecuteAsync で一発実行するだけ
                 await connection.ExecuteAsync(sql, insertData);
             }
             catch (Exception ex)
@@ -108,7 +107,7 @@ public class SqlRepository
             }
         }
     }
-    public async Task<Command> GetCommandRequestAsync(string eqpName)
+    public async Task<EquipmentCommand> SelectCommandRequestAsync(string eqpName)
     {
         using (var connection = new SqlConnection(connectionString))
         {
@@ -152,14 +151,11 @@ public class SqlRepository
                           carrier_id AS CarrierId,
                           eqp_name AS EqpName,
                           location AS Location,
-                          reception_at AS ReceptionAt,
-                          send_at AS SendAt,
-                          completion_at AS CompletionAt,
                           command_status AS CommandStatus
                           FROM commands
                           WHERE command_id = @SelectedId;";
 
-                return await connection.QueryFirstOrDefaultAsync<Command>(sql, new { EqpName = eqpName });
+                return await connection.QueryFirstOrDefaultAsync<EquipmentCommand>(sql, new { EqpName = eqpName });
             }
             catch (Exception)
             {
@@ -229,7 +225,7 @@ public class SqlRepository
                                 storage_at = NULL
                                 WHERE 
                                     shelf_location = @Location;
-                END";
+                          END";
                 await connection.ExecuteAsync(sql, new
                 {
                     CommandId = completion.CommandId,
@@ -248,21 +244,32 @@ public class SqlRepository
         }
     }
 
-    public async Task<List<Shelf>> GetShelfAsync(string prefix)
+    public async Task<(List<Shelf> ShelfList, List<(string CarrierId, string Location)>)>SelectShelfInformationAsync(string prefix)
     {
         using (var connection = new SqlConnection(connectionString))
         {
             try
             {
                 var sql = @"
-                          SELECT shelf_location AS ShelfLocation,
+                          SELECT 
+                          shelf_location AS ShelfLocation,
                           stored_carrier_id AS StoredCarrierId,
                           reservation AS Reservation,
                           storage_at AS StorageAt
                           FROM shelves
-                          WHERE shelf_location LIKE @Prefix; ";
+                          WHERE shelf_location LIKE @Prefix; 
+                          
+                          SELECT 
+                          carrier_id AS CarrierId,
+                          location AS Location
+                          FROM commands
+                          WHERE command_status IN (0,1)";
 
-                return (await connection.QueryAsync<Shelf>(sql, new { Prefix = prefix })).ToList();
+                using var multi = await connection.QueryMultipleAsync(sql, new { Prefix = prefix });
+
+                var shelfList = (await multi.ReadAsync<Shelf>()).ToList();
+                var incompleteCommandList = (await multi.ReadAsync<(string CarrierId, string Location)>()).ToList();
+                return (shelfList, incompleteCommandList);
             }
             catch (Exception)
             {
