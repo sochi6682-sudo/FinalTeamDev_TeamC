@@ -452,18 +452,113 @@ document.addEventListener("DOMContentLoaded", initOutboundCompletePage);
 //＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
 // 在庫一覧更新
 //＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+let inventoryEqpFilter = "1";
+
+function setupEvents() {
+    document.querySelectorAll("[data-command-filter]").forEach(button => {
+        button.addEventListener("click", () => {
+            commandFilter = button.dataset.commandFilter;
+
+            document.querySelectorAll("[data-command-filter]").forEach(x => {
+                x.classList.remove("active");
+            });
+
+            button.classList.add("active");
+            updateCommandList();
+        });
+    });
+
+    const inventoryFilter = document.getElementById("inventory-eqp-filter");
+    if (inventoryFilter) {
+        inventoryFilter.addEventListener("change", () => {
+            inventoryEqpFilter = inventoryFilter.value;
+            updateInventoryList();
+        });
+    }
+}
+
 function updateInventoryList() {
-    const area = document.getElementById('inventory-list');
+    const area = document.getElementById("inventory-rack-area");
     if (!area) return;
 
-    area.innerHTML = '';
+    area.innerHTML = "";
 
-    latestShelves.forEach(shelf => {
-        const div = document.createElement('div');
-        div.textContent =
-            `棚: ${shelf.shelfLocation}, CarrierID: ${shelf.carrierId ?? ''}`;
-        area.appendChild(div);
+    const filteredShelves = latestShelves.filter(shelf => {
+        const location = String(shelf.shelfLocation ?? shelf.location ?? "");
+        return location.startsWith(inventoryEqpFilter);
     });
+
+    area.innerHTML = `
+        <div class="rack-title">
+            保管棚 ${inventoryEqpFilter}
+        </div>
+
+        <div class="rack-grid" id="rack-grid">
+        </div>
+    `;
+
+    const grid = document.getElementById("rack-grid");
+
+    for (let height = 1; height <= 3; height++) {
+        for (let column = 1; column <= 2; column++) {
+            const location =
+                `${inventoryEqpFilter}${String(column).padStart(2, "0")}${String(height).padStart(2, "0")}`;
+
+            const shelf = filteredShelves.find(s => {
+                const shelfLocation = String(s.shelfLocation ?? s.location ?? "");
+                return shelfLocation === location;
+            });
+
+            const carrierId =
+                shelf?.storedCarrierId ??
+                shelf?.StoredCarrierId ??
+                "";
+
+            const storedAt =
+                shelf?.storageAt ??
+                shelf?.StorageAt ??
+                "";
+            const hasStock = carrierId !== "";
+
+            const card = document.createElement("div");
+            card.className = hasStock ? "shelf-card stock-exists" : "shelf-card stock-empty";
+
+            card.innerHTML = `
+                <div class="shelf-location">棚番号：${location}</div>
+
+                <div class="shelf-stock-badge">
+                    ${hasStock ? "在荷あり" : "在荷なし"}
+                </div>
+
+                <div class="shelf-row">
+                    <span>CarrierID</span>
+                    <strong>${hasStock ? carrierId : "-"}</strong>
+                </div>
+
+                <div class="shelf-row">
+                    <span>入庫日時</span>
+                    <strong class="datetime">2026/06/24<br>09:15</strong>
+                </div>
+            `;
+
+            grid.appendChild(card);
+        }
+    }
+}
+
+function formatDateTime(value) {
+    if (!value) return "-";
+
+    const date = new Date(value);
+    if (isNaN(date.getTime())) return value;
+
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, "0");
+    const dd = String(date.getDate()).padStart(2, "0");
+    const hh = String(date.getHours()).padStart(2, "0");
+    const mi = String(date.getMinutes()).padStart(2, "0");
+
+    return `${yyyy}/${mm}/${dd} ${hh}:${mi}`;
 }
 
 //＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
@@ -482,27 +577,22 @@ function updateEquipmentStatus() {
         div.innerHTML = `
             <h3>${equipment.eqpName}</h3>
 
-            <div class="status-item">
-                <span class="status-label">通信状態</span>
-                <span class="${equipment.controlState === 'Online'
-                ? 'status-online'
-                : 'status-offline'}">
-                    ${equipment.controlState}
-                </span>
+            <div class="status-row">
+                <span class="status-title">通信状態</span>
+                <span class="state-chip ${equipment.controlState === 1 ? 'chip-online' : 'chip-off'}">ON-LINE</span>
+                <span class="state-chip ${equipment.controlState === 0 ? 'chip-offline' : 'chip-off'}">OFF-LINE</span>
             </div>
 
-            <div class="status-item">
-                <span class="status-label">設備状態</span>
-                <span>${equipment.equipmentStatus}</span>
+            <div class="status-row">
+                <span class="status-title">設備状態</span>
+                <span class="state-chip ${equipment.equipmentStatus === 1 ? 'chip-active' : 'chip-off'}">ACTIVE</span>
+                <span class="state-chip ${equipment.equipmentStatus === 0 ? 'chip-idle' : 'chip-off'}">IDLE</span>
             </div>
 
-            <div class="status-item">
-                <span class="status-label">異常状態</span>
-                <span class="${equipment.alarmStatus === 'Alarm'
-                ? 'status-alarm'
-                : 'status-normal'}">
-                    ${equipment.alarmStatus}
-                </span>
+            <div class="status-row">
+                <span class="status-title">異常状態</span>
+                <span class="state-chip ${equipment.alarmStatus === 0 ? 'chip-normal' : 'chip-off'}">NO ALARM</span>
+                <span class="state-chip ${equipment.alarmStatus === 1 ? 'chip-alarm' : 'chip-off'}">ALARM</span>
             </div>
         `;
 

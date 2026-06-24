@@ -59,6 +59,42 @@ INSERT INTO shelves VALUES ('30201', NULL, NULL, NULL);
 INSERT INTO shelves VALUES ('30202', NULL, NULL, NULL);
 INSERT INTO shelves VALUES ('30203', NULL, NULL, NULL);
 
+UPDATE shelves
+SET
+    stored_carrier_id = 'CAR000001',
+    storage_at = '2026-06-24 09:15:00'
+WHERE shelf_location = '10101';
+
+UPDATE shelves
+SET
+    stored_carrier_id = NULL,
+    storage_at = NULL
+WHERE shelf_location = '10102';
+
+UPDATE shelves
+SET
+    stored_carrier_id = 'CAR000003',
+    storage_at = '2026-06-24 10:00:00'
+WHERE shelf_location = '10103';
+
+UPDATE shelves
+SET
+    stored_carrier_id = NULL,
+    storage_at = NULL
+WHERE shelf_location = '10201';
+
+UPDATE shelves
+SET
+    stored_carrier_id = 'CAR000005',
+    storage_at = '2026-06-24 11:00:00'
+WHERE shelf_location = '10202';
+
+UPDATE shelves
+SET
+    stored_carrier_id = 'CAR000006',
+    storage_at = '2026-06-24 13:20:00'
+WHERE shelf_location = '10203';
+
 SELECT * FROM commands;
 SELECT * FROM shelves;
 
