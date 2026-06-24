@@ -4,33 +4,12 @@
     ViewData["Title"] = "出庫搬送完了報告受信・払出完了報告";
 }
 
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+<div id="page-outbound-complete" class="page-container">
 
-    <link rel="manifest" href="/manifest.json" />
-    <link rel="stylesheet" href="/css/site.css" />
+    <h1>出庫完了報告</h1>
 
-    <title>出庫完了報告画面</title>
-</head>
+    <div id="outbound-complete-list"></div>
 
-<body>
+    <button id="btn-back" class="back-button">戻る</button>
 
-    <!-- サーバー停止オーバーレイ -->
-    <div id="serverStopOverlay" class="card-img-overlay hidden">
-        <div class="overlay-text">サーバー停止中</div>
-    </div>
-
-    <!-- 出庫完了報告画面 -->
-    <div id="screen-complete-report" class="screen hidden">
-        <h2>出庫完了報告</h2>
-
-        <div id="complete-list">
-            <!-- JSで動的に生成 -->
-        </div>
-
-        <button id="btn-back">戻る</button>
-    </div>
-
-    <script src="js/site.js"></script>
-</body>
+</div>

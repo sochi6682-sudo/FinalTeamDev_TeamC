@@ -4,39 +4,33 @@
     ViewData["Title"] = "搬送指示送信";
 }
 
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+<div id="page-command-send" class="page-container">
 
-    <link rel="manifest" href="/manifest.json" />
-    <link rel="stylesheet" href="/css/site.css" />
+    <h1>搬送指示送信</h1>
 
-    <title>搬送指示送信画面</title>
-</head>
+    <div class="form-section">
 
-<body>
+        <label>キャリアID</label>
+        <select id="carrierIdSelect" class="input-field">
+            <option value="">選択してください</option>
+        </select>
 
-    <!-- サーバー停止オーバーレイ -->
-    <div id="serverStopOverlay" class="card-img-overlay hidden">
-        <div class="overlay-text">サーバー停止中</div>
+        <label>棚ID</label>
+        <select id="shelfIdSelect" class="input-field" disabled>
+            <option value="">自動選択</option>
+        </select>
+
+        <label>結果表示</label>
+        <div id="resultArea" class="result-box"></div>
+
+        <div class="button-row">
+            <button id="btn-inbound" class="send-button">入庫</button>
+            <button id="btn-outbound" class="send-button">出庫</button>
+        </div>
     </div>
 
-    <!-- 搬送指示送信画面 -->
-    <div id="screen-send-comand" class="modal-fullscreen hidden">
-        <h2>搬送指示送信</h2>
+    <h2>設備状態（簡易）</h2>
+    <div id="command-equip-status"></div>
 
-        キャリアID:<input id="input-carrier" type="text"><br>
-        自動保管棚ID:
-        <select id="input-shelf"></select>
+</div>
 
-        <button id="btn-inbound">入庫</button>
-        <button id="btn-outbound">出庫</button>
-
-        <span class="lamp-inbound" data-id="10101"></span>
-        <span class="lamp-outbound" data-id="10101"></span>
-
-        <button id="btn-back">戻る</button>
-    </div>
-
-    <script src="js/site.js"></script>
-</body>
