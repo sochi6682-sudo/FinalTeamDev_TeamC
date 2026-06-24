@@ -1,5 +1,6 @@
 ﻿using FinalAssigenment.Models;
 using FinalAssigenment.Repositories;
+using System.Buffers.Text;
 using System.ComponentModel.Design;
 using System.Net;
 using System.Net.NetworkInformation;
@@ -196,9 +197,13 @@ public class ShelfSystemService
     public async Task PostHttpClientAsync(RelayCommand sendCommand, string endPoint)
     {
         string url = "";
-        if (sendCommand.EqpName == "EQP01") url = _eqpBaseUrls[0];
-        else if (sendCommand.EqpName == "EQP02") url = _eqpBaseUrls[1];
-        else if (sendCommand.EqpName == "EQP03") url = _eqpBaseUrls[2];
+        if (endPoint == "completion") url = "http://localhost:5248"; // スマホのURL
+        else
+        {
+            if (sendCommand.EqpName == "EQP01") url = _eqpBaseUrls[0];
+            else if (sendCommand.EqpName == "EQP02") url = _eqpBaseUrls[1];
+            else if (sendCommand.EqpName == "EQP03") url = _eqpBaseUrls[2];
+        }
         try
         {
             var response = await _httpClient.PostAsJsonAsync($"{url}/api/shelf-system/{endPoint}", sendCommand);
