@@ -33,9 +33,9 @@ public class ShelfSystemService
         ];
 
     private readonly List<string> _eqpBaseUrls = [
-            "http://172.16.7.44:8090",
-            "http://172.16.7.44:8091",
-            "http://172.16.7.44:8092"
+            "http://localhost:8090",
+            "http://localhost:8091",
+            "http://localhost:8092"
         ];
     public List<EquipmentState> EqpStatusList => _eqpStatusList;
     private readonly ConcurrentDictionary<string, CancellationTokenSource> _timeoutCancell = new();
@@ -178,6 +178,11 @@ public class ShelfSystemService
                 targetEqp.AlarmStatus = 0;
                 _logger.LogInformation("[Info] AlarmStatus : NO ALARM"); 
             }
+            else
+            {
+                targetEqp.ControlState = 0;
+                _logger.LogInformation("[Info] ControlState : OFF-LINE");
+            }
         }
     }
 
@@ -185,15 +190,9 @@ public class ShelfSystemService
     {
         var targetEqp = _eqpStatusList.FirstOrDefault(e => e.EqpName == unload.EqpName);
         if (targetEqp == null) return false;
-        try
-        {
-            await PostHttpClientAsync(unload, endPoint);
-            return true;
-        }
-        catch (Exception)
-        {
-            throw;
-        }
+        await PostHttpClientAsync(unload, endPoint);
+        return true;
+        
     }
 
     public async Task PostHttpClientAsync(RelayCommand sendCommand, string endPoint)
@@ -254,13 +253,7 @@ public class ShelfSystemService
                     expiredCts.Dispose(); 
                 }
             }
-            lock (_lockObject)
-            {
-                var targetEqp = _eqpStatusList.First(e => e.EqpName == sendCommand.EqpName);
-                targetEqp.ControlState = 0;
-                _logger.LogInformation("[Info] ControlState : OFF-LINE");
-                Console.WriteLine("タイムアウトしました。");
-            }
+            UpdateEqpStatus(sendCommand.EqpName, "");
         });
     }
 

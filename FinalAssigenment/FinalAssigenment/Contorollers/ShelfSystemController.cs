@@ -30,7 +30,7 @@ public class ShelfSystemController : ControllerBase
     {
         try
         {
-            _logger.LogInformation($"[Info] 情報取得受信");
+            _logger.LogInformation($"[Info] 情報取得開始");
             var systemInfo = await _repository.SelectInfomationAsync();
             systemInfo.Status = _service.EqpStatusList;
             return Ok(systemInfo);
@@ -110,8 +110,10 @@ public class ShelfSystemController : ControllerBase
     {
         try
         {
+            _logger.LogInformation("[Info] 設備ONLINE報告開始");
             _endPointName = HttpContext.Request.Path.Value.Split('/').Last();
             _service.UpdateEqpStatus(online.EqpName, _endPointName);
+            _logger.LogInformation("[Info] 設備ONLINE報告報告完了");
             return Ok();
         }
         catch (Exception ex)
@@ -147,6 +149,7 @@ public class ShelfSystemController : ControllerBase
             _service.CancelTimeoutTimer(completion.CommandId);
             if (completion.CommandType == 0)
             {
+                _logger.LogInformation($"[Info] 在庫削除 CarrierID＝{completion.CarrierId},ShelfLocation＝{completion.Location}");
                 _logger.LogInformation("[Info] スマホへ出庫完了報告開始");
                 RelayCommand sendCommand = new()
                 {
@@ -157,6 +160,10 @@ public class ShelfSystemController : ControllerBase
                 await _service.PostHttpClientAsync(sendCommand, _endPointName);
                 _logger.LogInformation("[Info] スマホへ出庫完了報告成功");
             }
+            else if(completion.CommandType == 1)
+            {
+                _logger.LogInformation($"[Info] 在庫削除 CarrierID＝{completion.CarrierId},ShelfLocation＝{completion.Location}");
+            }
             return Ok();
         }
         catch (Exception ex)
@@ -165,7 +172,7 @@ public class ShelfSystemController : ControllerBase
         }
     }
     [HttpPost("incident")]
-    public IActionResult PostIncident([FromBody] IncidentEqp incident)
+    public IActionResult PostIncident([FromBody] IncidentEquipment incident)
     {
         try
         {
@@ -181,7 +188,7 @@ public class ShelfSystemController : ControllerBase
         }
     }
     [HttpPost("recovery")]
-    public IActionResult PostRecovery([FromBody] IncidentEqp recovery)
+    public IActionResult PostRecovery([FromBody] IncidentEquipment recovery)
     {
         try
         {

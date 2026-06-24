@@ -216,7 +216,7 @@ public class SqlRepository
                         command_id = @CommandId;
 
                       -- shelvesテーブルの更新（CommandTypeで分岐）
-                      IF @CommandType = 1
+                      IF @CommandType = 1 AND @CommandStatus = 2
                       BEGIN
                         -- 入庫の場合：キャリアIDと入庫時刻を更新
                         UPDATE shelves
@@ -298,7 +298,6 @@ public class SqlRepository
 
     public async Task UpdateTimeOutAsync(EquipmentCommand sendCommand)
     {
-        Console.WriteLine("タイムアウト検知によるDB操作中");
         using var connection = new SqlConnection(connectionString);
 
         try

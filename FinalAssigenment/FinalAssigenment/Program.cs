@@ -9,7 +9,7 @@ namespace FinalAssigenment;
 
 public class Program
 {
-    public static async Task Main(string[] args)
+    public static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
         builder.Services.AddOpenApi();
@@ -71,6 +71,6 @@ public class Program
         app.MapRazorPages()
            .WithStaticAssets();
 
-        await app.RunAsync();
+        app.Run();
     }
 }
