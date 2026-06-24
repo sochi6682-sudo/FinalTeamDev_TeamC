@@ -30,16 +30,20 @@ public class Program
         builder.Services.AddRazorPages();
 
         var app = builder.Build();
-        try
+        Task initial = Task.Run(async () =>
         {
-            // app.Services から直接 Singleton のインスタンスを取り出して実行
-            var shelfService = app.Services.GetRequiredService<ShelfSystemService>();
-            await shelfService.GetAllEqpStateAsync();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine("【起動時通信テスト】想定通りに失敗しました！");
-        }
+            try
+            {
+                // app.Services から直接 Singleton のインスタンスを取り出して実行
+                var shelfService = app.Services.GetRequiredService<ShelfSystemService>();
+
+                await shelfService.GetAllEqpStateAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"【起動時通信テスト】失敗しました！ エラー");
+            }
+        });
         if (app.Environment.IsDevelopment())
         {
             app.MapOpenApi();
