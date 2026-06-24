@@ -4,34 +4,25 @@
     ViewData["Title"] = "メニュー";
 }
 
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-    <link rel="manifest" href="/manifest.json" />
-    <link rel="stylesheet" href="/css/site.css" />
-
-    <title>メニュー</title>
-</head>
-
-<body>
-    
+<!-- メニュー画面 -->
+<div class="menu-page">
     <!-- サーバー停止オーバーレイ -->
     <div id="serverStopOverlay" class="card-img-overlay hidden">
         <div class="overlay-text">サーバー停止中</div>
     </div>
 
-    <!-- メニュー画面 -->
+    <h1>保管設備 管理メニュー</h1>
 
-    <div id="screen-menu" class="modal-fullscreen active">
-        <h2>メニュー</h2>
+    <div class="menu-grid">
+        <a class="menu-button" href="/CommandSend">搬送指示送信</a>
+        <a class="menu-button" href="/CommandList">搬送指示一覧</a>
+        <a class="menu-button" href="/Report">出庫完了報告</a>
+        <a class="menu-button" href="/Inventory">在庫一覧</a>
+        <a class="menu-button" href="/EqpState">保管設備状態</a>
+    </div>
+</div>
 
-        <button id="btn-send-commands">搬送指示送信</button>
-        <button id="btn-get-commands">搬送指示一覧</button>
-        <button id="btn-complete-report">出庫完了報告</button>
-        <button id="btn-inventory-list">在庫一覧</button>
-        <button id="btn-shelf-status">保管状態</button>
-    </div> 
-
-    <script src="js/site.js"></script>
-</body>
+@section Scripts
+{
+    <script src="~/js/site.js"></script>
+}
