@@ -1,6 +1,7 @@
 ﻿using FinalAssigenment.Models;
 using FinalAssigenment.Repositories;
 using System.Buffers.Text;
+using System.Collections.Concurrent;
 using System.ComponentModel.Design;
 using System.Net;
 using System.Net.NetworkInformation;
@@ -36,7 +37,7 @@ public class ShelfSystemService
             "http://localhost:8092"
         ];
     public List<EquipmentState> EqpStatusList => _eqpStatusList;
-
+    private readonly ConcurrentDictionary<string, CancellationTokenSource> _timeoutCancell = new();
     public async Task GetAllEqpStateAsync()
     {
         List<Task> tasks = _eqpBaseUrls.Select(u => GetEqpStateAsync(u)).ToList();
@@ -150,7 +151,6 @@ public class ShelfSystemService
         lock (_lockObject)
         {
             var targetEqp = _eqpStatusList.First(e => e.EqpName == eqpName);
-
             if (endPoint == "online")
             {
                 targetEqp.ControlState = 1;
@@ -198,7 +198,7 @@ public class ShelfSystemService
     {
         string url = "";
         if (endPoint == "completion") url = "http://localhost:5248"; // スマホのURL
-        else
+        else if (endPoint == "unload")
         {
             if (sendCommand.EqpName == "EQP01") url = _eqpBaseUrls[0];
             else if (sendCommand.EqpName == "EQP02") url = _eqpBaseUrls[1];
@@ -224,21 +224,51 @@ public class ShelfSystemService
 
     public void TimeoutOccurred(EquipmentCommand sendCommand)
     {
+        //ディクショナリに追加
+        var cts = new CancellationTokenSource();
+        bool added = _timeoutCancell.TryAdd(sendCommand.CommandId, cts);
+        Console.WriteLine($"[Timer] タイマーを追加しました。CommandId:{sendCommand.CommandId}, 結果:{added}");
         Task task = Task.Run(async() =>
         {
-            await Task.Delay(30000);
-            await _repository.UpdateTimeOutAsync(sendCommand);
+            try
+            {
+                await Task.Delay(30000, cts.Token);
+                await _repository.UpdateTimeOutAsync(sendCommand);
+            }
+            catch (OperationCanceledException ex)
+            {
+                Console.WriteLine("タイマーを停止しました。");
+                return;
+            }
+            catch (Exception ex)
+            {
+                return;
+            }
+            finally
+            {
+                //ディクショナリから完全に削除
+                if (_timeoutCancell.TryRemove(sendCommand.CommandId, out var expiredCts))
+                {
+                    expiredCts.Dispose(); 
+                }
+            }
             lock (_lockObject)
             {
-                var targetEqp = _eqpStatusList.FirstOrDefault(e => e.EqpName == sendCommand.EqpName);
-                if (targetEqp != null)
-                {
-                    targetEqp.ControlState = 0;
-                    _logger.LogInformation("[Info] ControlState : OFF-LINE");
-                }
+                var targetEqp = _eqpStatusList.First(e => e.EqpName == sendCommand.EqpName);
+                targetEqp.ControlState = 0;
+                _logger.LogInformation("[Info] ControlState : OFF-LINE");
                 Console.WriteLine("タイムアウトしました。");
             }
         });
+    }
 
+    public void CancelTimeoutTimer(string commandId)
+    {
+        //搬送完了POSTによりDBの更新がされたら、タイマーストップし、削除
+        if (_timeoutCancell.TryRemove(commandId, out var cts))
+        {
+            cts.Cancel();  
+            cts.Dispose(); 
+        }
     }
 }

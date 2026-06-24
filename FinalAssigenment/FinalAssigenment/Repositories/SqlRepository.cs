@@ -298,6 +298,7 @@ public class SqlRepository
 
     public async Task UpdateTimeOutAsync(EquipmentCommand sendCommand)
     {
+        Console.WriteLine("タイムアウト検知によるDB操作中");
         using var connection = new SqlConnection(connectionString);
 
         try
@@ -305,7 +306,9 @@ public class SqlRepository
             var sql = @"
               -- 該当する搬送指示を異常完了にする
               UPDATE commands 
-              SET command_status = 3 
+              SET 
+　　　　　　　　command_status = 3,
+                completion_at = GETDATE()
               WHERE command_id = @CommandId and command_status IN (0,1);
 
               -- 出庫なら、棚の予約とキャリアIDをnullにする
@@ -313,7 +316,8 @@ public class SqlRepository
               BEGIN
                   UPDATE shelves 
                   SET stored_carrier_id = NULL, 
-                      reservation = NULL 
+                      reservation = NULL,
+                      storage_at = NULL
                   WHERE shelf_location = @Location;
               END";
 
