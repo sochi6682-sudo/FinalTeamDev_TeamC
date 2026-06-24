@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.ComponentModel.Design;
 using System.Net;
 using System.Net.NetworkInformation;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
@@ -58,7 +59,7 @@ public class ShelfSystemService
                 lock (_lockObject)
                 {
                     var targetEqp = _eqpStatusList.First(e => e.EqpName == eqpState.EqpName);
-                    targetEqp.ControlState = eqpState.ControlState;
+                    targetEqp.ControlState = 1;
                     _logger.LogInformation("[Info] ControlState : ON-LINE");
                     targetEqp.AlarmStatus = eqpState.AlarmStatus;
                     if(targetEqp.AlarmStatus == 1) _logger.LogInformation("[Info] AlarmStatus : ALARM");
@@ -68,12 +69,11 @@ public class ShelfSystemService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "【[Error] 設備状態取得失敗");
-            throw;
+            _logger.LogError("【[Error] 設備状態取得失敗");
         }
 
     }
-    public async Task InsertValidationAsync(InsertCommand newCommand)
+    public async Task InsertValidationAsync(InsertCommand newCommand, DateTime receptionAt)
     {
         if (!Regex.IsMatch(newCommand.CarrierId, @"^CAR[0-9]{6}$"))
         {
@@ -111,7 +111,7 @@ public class ShelfSystemService
             }
             availableLocation = selectedInShelf.ShelfLocation;
         }
-        else
+        else if(newCommand.CommandType == 0)
         {
             bool isAllEmpty = shelfList.Any(s => s.StoredCarrierId != null);
             if (!isAllEmpty)
@@ -137,7 +137,7 @@ public class ShelfSystemService
             CommandType = (int)newCommand.CommandType,
             EqpName = newCommand.EqpName,
             Location = availableLocation,
-            ReceptionAt = DateTime.Now,
+            ReceptionAt = receptionAt,
             SendAt = null,
             CompletionAt = null,
             CommandStatus = 0
@@ -151,7 +151,7 @@ public class ShelfSystemService
         lock (_lockObject)
         {
             var targetEqp = _eqpStatusList.First(e => e.EqpName == eqpName);
-            if (endPoint == "online")
+            if (endPoint == "online" || endPoint == "request")
             {
                 targetEqp.ControlState = 1;
                 _logger.LogInformation("[Info] ControlState : ON-LINE"); 
@@ -163,6 +163,8 @@ public class ShelfSystemService
             }
             else if (endPoint == "completion")
             {
+                targetEqp.ControlState = 1;
+                _logger.LogInformation("[Info] ControlState : ON-LINE");
                 targetEqp.EquipmentStatus = 0;
                 _logger.LogInformation("[Info] EquipmentStatus : IDLE"); 
             }
@@ -176,6 +178,11 @@ public class ShelfSystemService
                 targetEqp.AlarmStatus = 0;
                 _logger.LogInformation("[Info] AlarmStatus : NO ALARM"); 
             }
+            else
+            {
+                targetEqp.ControlState = 0;
+                _logger.LogInformation("[Info] ControlState : OFF-LINE");
+            }
         }
     }
 
@@ -183,15 +190,9 @@ public class ShelfSystemService
     {
         var targetEqp = _eqpStatusList.FirstOrDefault(e => e.EqpName == unload.EqpName);
         if (targetEqp == null) return false;
-        try
-        {
-            await PostHttpClientAsync(unload, endPoint);
-            return true;
-        }
-        catch (Exception)
-        {
-            throw;
-        }
+        await PostHttpClientAsync(unload, endPoint);
+        return true;
+        
     }
 
     public async Task PostHttpClientAsync(RelayCommand sendCommand, string endPoint)
@@ -252,13 +253,7 @@ public class ShelfSystemService
                     expiredCts.Dispose(); 
                 }
             }
-            lock (_lockObject)
-            {
-                var targetEqp = _eqpStatusList.First(e => e.EqpName == sendCommand.EqpName);
-                targetEqp.ControlState = 0;
-                _logger.LogInformation("[Info] ControlState : OFF-LINE");
-                Console.WriteLine("タイムアウトしました。");
-            }
+            UpdateEqpStatus(sendCommand.EqpName, "");
         });
     }
 

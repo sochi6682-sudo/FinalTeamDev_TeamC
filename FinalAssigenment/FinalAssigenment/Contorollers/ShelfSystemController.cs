@@ -30,13 +30,14 @@ public class ShelfSystemController : ControllerBase
     {
         try
         {
+            _logger.LogInformation($"[Info] 情報取得開始");
             var systemInfo = await _repository.SelectInfomationAsync();
             systemInfo.Status = _service.EqpStatusList;
             return Ok(systemInfo);
         }
         catch (Exception ex)
         {
-            return StatusCode(500, $"情報取得失敗: {ex.ToString()}");
+            return StatusCode(500, $"情報取得失敗");
         }
     }
     [HttpGet("request")]
@@ -45,6 +46,8 @@ public class ShelfSystemController : ControllerBase
         try
         {
             DateTime sendAt = DateTime.Now;
+            _endPointName = HttpContext.Request.Path.Value.Split('/').Last();
+            _service.UpdateEqpStatus(eqpName, _endPointName);
             var sendCommand = await _repository.SelectCommandRequestAsync(eqpName, sendAt);
             if (sendCommand != null)
             {
@@ -55,7 +58,7 @@ public class ShelfSystemController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, $"[Error]搬送指示要求GET失敗: {ex.ToString}");
+            return StatusCode(500, $"[Error]搬送指示要求GET失敗");
         }
     }
     [HttpPost("command")]
@@ -63,8 +66,9 @@ public class ShelfSystemController : ControllerBase
     {
         try
         {
-            await _service.InsertValidationAsync(newCommand);
             _logger.LogInformation($"[Info] 搬送指示受信");
+            DateTime receptionAt = DateTime.Now;
+            await _service.InsertValidationAsync(newCommand, receptionAt);
             return StatusCode(201, new 
             { 
                 message = "搬送指示登録成功" 
@@ -76,7 +80,7 @@ public class ShelfSystemController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, $"[Error]搬送指示登録失敗: {ex.ToString}");
+            return StatusCode(500, $"[Error]搬送指示登録失敗");
         }
     }
     [HttpPost("unload")]
@@ -98,7 +102,7 @@ public class ShelfSystemController : ControllerBase
         catch (Exception ex)
         {
             
-            return StatusCode(500, $"[Error]サーバへ払出完了報告失敗: {ex.ToString}");
+            return StatusCode(500, $"[Error]サーバへ払出完了報告失敗");
         }
     }
     [HttpPost("online")]
@@ -106,13 +110,15 @@ public class ShelfSystemController : ControllerBase
     {
         try
         {
+            _logger.LogInformation("[Info] 設備ONLINE報告開始");
             _endPointName = HttpContext.Request.Path.Value.Split('/').Last();
             _service.UpdateEqpStatus(online.EqpName, _endPointName);
+            _logger.LogInformation("[Info] 設備ONLINE報告報告完了");
             return Ok();
         }
         catch (Exception ex)
         {
-            return StatusCode(500, $"[Error] 設備ONLINE報告失敗: {ex.ToString}");
+            return StatusCode(500, $"[Error] 設備ONLINE報告失敗");
         }
     }
     [HttpPost("start")]
@@ -127,7 +133,7 @@ public class ShelfSystemController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, $"[Error] 搬送指示開始報告失敗: {ex.ToString}");
+            return StatusCode(500, $"[Error] 搬送指示開始報告失敗");
         }
     }
     [HttpPost("completion")]
@@ -143,6 +149,7 @@ public class ShelfSystemController : ControllerBase
             _service.CancelTimeoutTimer(completion.CommandId);
             if (completion.CommandType == 0)
             {
+                _logger.LogInformation($"[Info] 在庫削除 CarrierID＝{completion.CarrierId},ShelfLocation＝{completion.Location}");
                 _logger.LogInformation("[Info] スマホへ出庫完了報告開始");
                 RelayCommand sendCommand = new()
                 {
@@ -153,41 +160,47 @@ public class ShelfSystemController : ControllerBase
                 await _service.PostHttpClientAsync(sendCommand, _endPointName);
                 _logger.LogInformation("[Info] スマホへ出庫完了報告成功");
             }
+            else if(completion.CommandType == 1)
+            {
+                _logger.LogInformation($"[Info] 在庫削除 CarrierID＝{completion.CarrierId},ShelfLocation＝{completion.Location}");
+            }
             return Ok();
         }
         catch (Exception ex)
         {
-            return StatusCode(500, $"[Error] 搬送指示完了報告失敗: {ex.ToString()}");
+            return StatusCode(500, $"[Error] 搬送指示完了報告失敗");
         }
     }
     [HttpPost("incident")]
-    public IActionResult PostIncident([FromBody] string eqpName)
+    public IActionResult PostIncident([FromBody] IncidentEquipment incident)
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(eqpName)) return BadRequest("eqpNameが未入力です。");
+            _logger.LogInformation("[Info] 異常発生報告開始");
+            if (string.IsNullOrWhiteSpace(incident.EqpName)) return BadRequest("eqpNameが未入力です。");
             _endPointName = HttpContext.Request.Path.Value.Split('/').Last();
-            _service.UpdateEqpStatus(eqpName, _endPointName);
+            _service.UpdateEqpStatus(incident.EqpName, _endPointName);
             return Ok();
         }
         catch (Exception ex)
         {
-            return StatusCode(500, $"[Error]異常発生報告失敗: {ex.ToString()}");
+            return StatusCode(500, $"[Error]異常発生報告失敗");
         }
     }
     [HttpPost("recovery")]
-    public IActionResult PostRecovery([FromBody] string eqpName)
+    public IActionResult PostRecovery([FromBody] IncidentEquipment recovery)
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(eqpName)) return BadRequest("eqpNameが未入力です。");
+            _logger.LogInformation("[Info] 異常復旧報告開始");
+            if (string.IsNullOrWhiteSpace(recovery.EqpName)) return BadRequest("eqpNameが未入力です。");
             _endPointName = HttpContext.Request.Path.Value.Split('/').Last();
-            _service.UpdateEqpStatus(eqpName, _endPointName);
+            _service.UpdateEqpStatus(recovery.EqpName, _endPointName);
             return Ok();
         }
         catch (Exception ex)
         {
-            return StatusCode(500, $"[Error]異常復旧報告失敗: {ex.ToString()}");
+            return StatusCode(500, $"[Error]異常復旧報告失敗");
         }
     }
 
