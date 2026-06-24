@@ -42,8 +42,7 @@ public class SqlRepository
                       UNION ALL
                       SELECT 
                       TOP(100) * FROM commands
-                      WHERE command_status IN (2,3)
-                      ORDER BY completion_at DESC;
+                      WHERE command_status IN (2,3);
                       -- 棚の情報を全件取得
                       SELECT 
                       shelf_location AS ShelfLocation,

@@ -17,7 +17,7 @@ public class DeviceHttpListener
         _controller = controller;
         _listener = new HttpListener();
 
-        _listener.Prefixes.Add("http://localhost:8080/");
+        _listener.Prefixes.Add("http://+:8090/");
     }
 
 
@@ -28,7 +28,7 @@ public class DeviceHttpListener
         try　//リスナー起動失敗対策
         {
             _listener.Start();
-            Logger.Info("設備HTTPリスナー開始 http://localhost:8080/");
+            Logger.Info("設備HTTPリスナー開始");
         }
         catch (Exception ex)
         {
