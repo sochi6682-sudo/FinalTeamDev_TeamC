@@ -94,6 +94,7 @@ public class ShelfSystemController : ControllerBase
             _logger.LogInformation("[Info] 設備へ払出完了報告成功");
             return Ok();
         }
+
         catch (Exception ex)
         {
             
@@ -139,6 +140,7 @@ public class ShelfSystemController : ControllerBase
             _endPointName = HttpContext.Request.Path.Value.Split('/').Last();
             _service.UpdateEqpStatus(completion.EqpName, _endPointName);
             await _repository.UpdateCompletionAsync(completion, completionAt);
+            _service.CancelTimeoutTimer(completion.CommandId);
             if (completion.CommandType == 0)
             {
                 _logger.LogInformation("[Info] スマホへ出庫完了報告開始");
@@ -155,7 +157,7 @@ public class ShelfSystemController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, $"[Error] 搬送指示完了報告失敗: {ex.ToString}");
+            return StatusCode(500, $"[Error] 搬送指示完了報告失敗: {ex.ToString()}");
         }
     }
     [HttpPost("incident")]
