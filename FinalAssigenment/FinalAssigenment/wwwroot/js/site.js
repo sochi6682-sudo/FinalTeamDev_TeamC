@@ -4,7 +4,58 @@ let latestCommands = [];
 let latestEquipments = [];
 
 document.addEventListener('DOMContentLoaded', () => {
+
+    // 仮データ
+    latestShelves = [
+        {
+            shelfLocation: "101",
+            carrierId: "CAR000001",
+            equipmentNo: "自動保管棚01"
+        },
+        {
+            shelfLocation: "201",
+            carrierId: "CAR000002",
+            equipmentNo: "自動保管棚02"
+        },
+        {
+            shelfLocation: "301",
+            carrierId: null,
+            equipmentNo: "自動保管棚03"
+        }
+    ];
+
+    latestEquipments = [
+        {
+            eqpName: "自動保管棚01",
+            controlState: "ONLINE"
+        },
+        {
+            eqpName: "自動保管棚02",
+            controlState: "ONLINE"
+        },
+        {
+            eqpName: "自動保管棚03",
+            controlState: "OFFLINE"
+        }
+    ];
+
+    latestCommands = [
+        {
+            commandId: 1,
+            carrierId: "CAR000001",
+            equipmentNo: "自動保管棚01",
+            commandType: 0,
+            commandStatus: 0
+        }
+    ];
+
+    updateShelfSelect();
+    updateCommandEquipStatus();
+
+    // API接続する場合
     startPolling();
+
+    // イベント設定
     setupEvents();
 });
 
@@ -55,181 +106,219 @@ function handleServerError() {
     disableAllControls();
 }
 
-// ===============================
-// 搬送指示送信
-// ===============================
+//＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+// 搬送指示送信画面
+//＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+
 function initCommandSendPage() {
 
-    if (!document.getElementById("page-command-send")) return;
+    const page = document.getElementById("page-command-send");
 
-    document.getElementById("btn-inbound").addEventListener("click", sendInboundCommand);
-    document.getElementById("btn-outbound").addEventListener("click", sendOutboundCommand);
+    if (!page) return;
 
-    document.getElementById("carrierIdSelect").addEventListener("change", onCarrierSelected);
+    document.getElementById("btn-inbound")
+        .addEventListener("click", sendInboundCommand);
 
-    fetchLatestData();
-    setInterval(fetchLatestData, 1000);
+    document.getElementById("btn-outbound")
+        .addEventListener("click", sendOutboundCommand);
+
+    updateCommandSend();
+
+    setInterval(updateCommandSend, 5000);
 }
 
-// ===============================
-// DB から最新情報取得
-// ===============================
-async function fetchLatestData() {
-    const [equipRes, shelfRes, cmdRes] = await Promise.all([
-        fetch("/api/shelf-system/equipments"),
-        fetch("/api/shelf-system/shelves"),
-        fetch("/api/shelf-system/commands")
-    ]);
+//＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+// 画面更新
+//＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
 
-    latestEquipments = await equipRes.json();
-    latestShelves = await shelfRes.json();
-    latestCommands = await cmdRes.json();
+function updateCommandSend() {
 
-    updateCarrierSelect();
+    updateShelfSelect();
+
     updateCommandEquipStatus();
-    onCarrierSelected();
 }
 
-// ===============================
-// キャリアIDプルダウン更新
-// ===============================
-function updateCarrierSelect() {
-    const select = document.getElementById("carrierIdSelect");
-    const current = select.value;
+//＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+// キャリアID更新
+//＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
 
-    select.innerHTML = `<option value="">選択してください</option>`;
+function updateShelfSelect() {
 
-    latestShelves.forEach(s => {
-        if (s.carrierId) {
-            const opt = document.createElement("option");
-            opt.value = s.carrierId;
-            opt.textContent = s.carrierId;
-            select.appendChild(opt);
-        }
+    const select =
+        document.getElementById("shelfIdSelect");
+
+    if (!select) return;
+
+    select.innerHTML =
+        '<option value="">選択してください</option>';
+
+    latestShelves.forEach(shelf => {
+
+        const option =
+            document.createElement("option");
+
+        option.value = shelf.shelfLocation;
+        option.textContent = shelf.shelfLocation;
+
+        select.appendChild(option);
     });
-
-    if (current) select.value = current;
 }
 
-// ===============================
-// キャリア選択 → 棚ID自動表示
-// ===============================
-function onCarrierSelected() {
-    const carrierId = document.getElementById("carrierIdSelect").value;
-    const shelfSelect = document.getElementById("shelfIdSelect");
-
-    shelfSelect.innerHTML = `<option value="">自動選択</option>`;
-
-    if (!carrierId) return;
-
-    const shelf = latestShelves.find(s => s.carrierId === carrierId);
-
-    if (shelf) {
-        const opt = document.createElement("option");
-        opt.value = shelf.shelfLocation;
-        opt.textContent = shelf.shelfLocation;
-        shelfSelect.appendChild(opt);
-        shelfSelect.value = shelf.shelfLocation;
-    }
-}
-
-// ===============================
+//＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
 // 入庫指示
-// ===============================
+//＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+
 async function sendInboundCommand() {
-    const carrierId = document.getElementById("carrierIdSelect").value;
-    const shelfId = document.getElementById("shelfIdSelect").value;
+
+    const carrierId =
+        document.getElementById("carrierIdInput").value;
+
+    const shelfId =
+        document.getElementById("shelfIdSelect").value;
 
     if (!carrierId || !shelfId) {
-        showResult("キャリアID と 棚ID を選択してください");
+
+        showResult("キャリアIDと棚IDを選択してください");
+
         return;
     }
 
-    const res = await fetch("/api/shelf-system/command", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            commandType: 0,
-            shelfLocation: shelfId,
-            carrierId: carrierId
-        })
-    });
+    const response = await fetch(
+        "/api/shelf-system/command",
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                commandType: 0,
+                shelfLocation: shelfId,
+                carrierId: carrierId
+            })
+        });
 
-    showResult(res.ok ? "入庫指示を送信しました" : "入庫指示に失敗しました");
+    if (response.ok) {
+        showResult("入庫指示を送信しました");
+    }
+    else {
+        showResult("入庫指示に失敗しました");
+    }
 }
 
-// ===============================
+//＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
 // 出庫指示
-// ===============================
+//＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+
 async function sendOutboundCommand() {
-    const carrierId = document.getElementById("carrierIdSelect").value;
+
+    const carrierId =
+        document.getElementById("carrierIdInput").value;
 
     if (!carrierId) {
-        showResult("キャリアID を選択してください");
+
+        showResult("キャリアIDを選択してください");
+
         return;
     }
 
-    const res = await fetch("/api/shelf-system/command", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            commandType: 1,
-            shelfLocation: null,
-            carrierId: carrierId
-        })
-    });
+    const response = await fetch(
+        "/api/shelf-system/command",
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                commandType: 1,
+                shelfLocation: null,
+                carrierId: carrierId
+            })
+        });
 
-    showResult(res.ok ? "出庫指示を送信しました" : "出庫指示に失敗しました");
+    if (response.ok) {
+        showResult("出庫指示を送信しました");
+    }
+    else {
+        showResult("出庫指示に失敗しました");
+    }
 }
 
-// ===============================
-// 結果表示
-// ===============================
-function showResult(msg) {
-    document.getElementById("resultArea").textContent = msg;
-}
+//＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+// 設備状態更新
+//＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
 
-// ===============================
-// 簡易設備状態（入庫可能 / 出庫可能ランプ）
-// ===============================
 function updateCommandEquipStatus() {
-    const area = document.getElementById("command-equip-status");
+
+    const area =
+        document.getElementById("command-equip-status");
+
+    if (!area) return;
+
     area.innerHTML = "";
 
-    latestEquipments.forEach(eqp => {
-        const eqpShelves = latestShelves.filter(s => s.equipmentNo === eqp.eqpName);
+    latestEquipments.forEach(equipment => {
 
-        const hasQueuedInbound = latestCommands.some(c =>
-            c.equipmentNo === eqp.eqpName &&
-            c.commandType === 0 &&
-            (c.commandStatus === 0 || c.commandStatus === 1)
-        );
-        const inboundOK = eqp.controlState === "Online" && !hasQueuedInbound;
+        const shelves = latestShelves.filter(x =>
+            x.equipmentNo === equipment.eqpName);
 
-        const hasStored = eqpShelves.some(s => s.carrierId !== null);
-        const outboundOK = eqp.controlState === "Online" && hasStored;
+        const hasInboundCommand =
+            latestCommands.some(command =>
+                command.equipmentNo === equipment.eqpName &&
+                command.commandType === 0 &&
+                (command.commandStatus === 0 ||
+                    command.commandStatus === 1));
+
+        const inboundOK =
+            equipment.controlState === "Online" &&
+            !hasInboundCommand;
+
+        const outboundOK =
+            equipment.controlState === "Online" &&
+            shelves.some(x => x.carrierId);
 
         const div = document.createElement("div");
+
         div.className = "command-equip-row";
 
         div.innerHTML = `
-            <div class="command-equip-name">${eqp.eqpName}</div>
-            <div class="command-equip-lamp-block">
-                <span>入庫</span>
-                <div class="lamp-mini ${inboundOK ? "on" : "off"}"></div>
-            </div>
-            <div class="command-equip-lamp-block">
-                <span>出庫</span>
-                <div class="lamp-mini ${outboundOK ? "on" : "off"}"></div>
-            </div>
-        `;
+    <div class="command-equip-name">
+        ${equipment.eqpName}
+    </div>
+
+    <div class="command-status-box
+        ${inboundOK ? "available" : "unavailable"}">
+        入庫可能
+    </div>
+
+    <div class="command-status-box
+        ${outboundOK ? "available" : "unavailable"}">
+        出庫可能
+    </div>
+`;
 
         area.appendChild(div);
     });
 }
 
-// ===============================
-document.addEventListener("DOMContentLoaded", initCommandSendPage);
+//＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+// 結果表示
+//＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+
+function showResult(message) {
+
+    const area =
+        document.getElementById("resultArea");
+
+    if (!area) return;
+
+    area.textContent = message;
+}
+
+//＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+
+document.addEventListener(
+    "DOMContentLoaded",
+    initCommandSendPage);
 
 //＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
 // 搬送指示一覧更新

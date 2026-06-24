@@ -270,96 +270,112 @@ body {
 /*============================================================================*/
 
 .page-container {
-    padding: 20px;
     max-width: 480px;
     margin: 0 auto;
-    font-family: sans-serif;
+    padding: 20px;
 }
 
-h1, h2 {
-    text-align: center;
-}
+    .page-container h1 {
+        text-align: center;
+        color: red;
+        font-size: 28px;
+        margin-bottom: 25px;
+    }
 
-.form-section {
+.input-row {
     display: flex;
-    flex-direction: column;
-    gap: 12px;
+    align-items: center;
+    margin-bottom: 15px;
 }
+
+    .input-row label {
+        width: 110px;
+        font-size: 16px;
+    }
 
 .input-field {
-    padding: 10px;
+    flex: 1;
+    padding: 8px;
     font-size: 16px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
+    border: 1px solid #999;
+    border-radius: 5px;
+}
+
+.result-title {
+    text-align: center;
+    margin: 20px 0 10px;
+    font-size: 18px;
 }
 
 .result-box {
     height: 40px;
-    border: 1px solid #aaa;
-    border-radius: 6px;
-    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
     background: #f8f8f8;
+    padding: 8px;
+    margin-bottom: 20px;
 }
 
 .button-row {
     display: flex;
     justify-content: space-between;
+    margin-bottom: 30px;
 }
 
-.send-button {
-    width: 48%;
-    padding: 12px;
-    font-size: 18px;
-    background: #007bff;
-    color: white;
+.btn-inbound,
+.btn-outbound {
+    width: 46%;
+    padding: 14px;
     border: none;
-    border-radius: 6px;
+    border-radius: 8px;
+    font-size: 20px;
 }
 
-/* 簡易設備状態 */
+.btn-inbound {
+    background: #8fd67b;
+}
+
+.btn-outbound {
+    background: #f5a380;
+}
+
+.equipment-title {
+    font-size: 20px;
+    margin-bottom: 15px;
+}
+
 .command-equip-row {
-    display: flex;
+    display: grid;
+    grid-template-columns: 120px 1fr 1fr;
     align-items: center;
-    justify-content: space-between;
-    border: 1px solid #ccc;
-    padding: 8px;
-    border-radius: 6px;
-    margin-bottom: 6px;
+    gap: 10px;
+    margin-bottom: 12px;
 }
 
 .command-equip-name {
-    font-size: 15px;
     font-weight: bold;
-    width: 120px;
+    font-size: 15px;
 }
 
-.command-equip-lamp-block {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 50px;
+/* 入庫可能・出庫可能 */
+.command-status-box {
+    text-align: center;
+    padding: 8px 0;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: bold;
+    border: 1px solid #666;
 }
 
-    .command-equip-lamp-block span {
-        font-size: 12px;
+    .command-status-box.available {
+        background: limegreen;
+        color: black;
     }
 
-.lamp-mini {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    border: 2px solid #666;
-    margin-top: 4px;
-}
-
-    .lamp-mini.on {
-        background-color: #4CAF50;
+    .command-status-box.unavailable {
+        background: #bdbdbd;
+        color: #555;
     }
-
-    .lamp-mini.off {
-        background-color: #ccc;
-    }
-
 /*============================================================================*/
 /* Report */
 /*============================================================================*/

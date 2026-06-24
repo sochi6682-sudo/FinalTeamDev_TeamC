@@ -8,29 +8,46 @@
 
     <h1>搬送指示送信</h1>
 
-    <div class="form-section">
-
-        <label>キャリアID</label>
-        <select id="carrierIdSelect" class="input-field">
-            <option value="">選択してください</option>
-        </select>
-
-        <label>棚ID</label>
-        <select id="shelfIdSelect" class="input-field" disabled>
-            <option value="">自動選択</option>
-        </select>
-
-        <label>結果表示</label>
-        <div id="resultArea" class="result-box"></div>
-
-        <div class="button-row">
-            <button id="btn-inbound" class="send-button">入庫</button>
-            <button id="btn-outbound" class="send-button">出庫</button>
-        </div>
+    <div class="input-row">
+        <label>キャリアID：</label>
+        <input type="text"
+               id="carrierIdInput"
+               class="input-field"
+               placeholder="CAR000001">
     </div>
 
-    <h2>設備状態（簡易）</h2>
+    <div class="input-row">
+        <label>保管棚ID：</label>
+        <select id="shelfIdSelect" class="input-field">
+            <option value="">選択してください</option>
+        </select>
+    </div>
+
+    <div class="result-title">
+        結果表示
+    </div>
+
+    <div id="resultArea" class="result-box"></div>
+
+    <div class="button-row">
+        <button id="btn-inbound" class="btn-inbound">
+            入庫
+        </button>
+
+        <button id="btn-outbound" class="btn-outbound">
+            出庫
+        </button>
+    </div>
+
+    <h2 class="equipment-title">
+        設備状態
+    </h2>
+
     <div id="command-equip-status"></div>
 
-</div>
+    <button class="back-button"
+            onclick="location.href='/'">
+        戻る
+    </button>
 
+</div>
