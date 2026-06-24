@@ -26,7 +26,7 @@ public class ShelfSystemService
         _httpClient = httpClient;
     }
     private readonly object _lockObject = new object();
-    private List<EquipmentState> _eqpStatusList = [
+    private List<EquipmentState> _eqpStateList = [
             new(){EqpName = "EQP01", ControlState = 0, EquipmentStatus = 0, AlarmStatus = 0 },
             new(){EqpName = "EQP02", ControlState = 0, EquipmentStatus = 0, AlarmStatus = 0 },
             new(){EqpName = "EQP03", ControlState = 0, EquipmentStatus = 0, AlarmStatus = 0}
@@ -37,8 +37,9 @@ public class ShelfSystemService
             "http://localhost:8091",
             "http://localhost:8092"
         ];
-    public List<EquipmentState> EqpStatusList => _eqpStatusList;
+    public List<EquipmentState> EqpStatusList => _eqpStateList;
     private readonly ConcurrentDictionary<string, CancellationTokenSource> _timeoutCancell = new();
+
     public async Task GetAllEqpStateAsync()
     {
         List<Task> tasks = _eqpBaseUrls.Select(u => GetEqpStateAsync(u)).ToList();
@@ -58,7 +59,7 @@ public class ShelfSystemService
                 var eqpState = await response.Content.ReadFromJsonAsync<EquipmentState>();
                 lock (_lockObject)
                 {
-                    var targetEqp = _eqpStatusList.First(e => e.EqpName == eqpState.EqpName);
+                    var targetEqp = _eqpStateList.First(e => e.EqpName == eqpState.EqpName);
                     targetEqp.ControlState = 1;
                     _logger.LogInformation("[Info] ControlState : ON-LINE");
                     targetEqp.AlarmStatus = eqpState.AlarmStatus;
@@ -79,7 +80,7 @@ public class ShelfSystemService
         {
             throw new HttpRequestException("キャリアID の命名規則が不正です。", null, System.Net.HttpStatusCode.BadRequest);
         }
-        var targetEqp = _eqpStatusList.FirstOrDefault(e => e.EqpName == newCommand.EqpName);
+        var targetEqp = _eqpStateList.FirstOrDefault(e => e.EqpName == newCommand.EqpName);
         if (targetEqp == null)
         {
             throw new HttpRequestException("設備IDが存在しません。", null, System.Net.HttpStatusCode.NotFound);
@@ -145,12 +146,12 @@ public class ShelfSystemService
         await _repository.InsertCommandsAsync(insertData);
     }
 
-    public void UpdateEqpStatus(string eqpName, string endPoint)
+    public void UpdateEqpState(string eqpName, string endPoint)
     {
         //同時に複数の設備機器の状態が遷移する可能性がある
         lock (_lockObject)
         {
-            var targetEqp = _eqpStatusList.First(e => e.EqpName == eqpName);
+            var targetEqp = _eqpStateList.First(e => e.EqpName == eqpName);
             if (endPoint == "online" || endPoint == "request")
             {
                 targetEqp.ControlState = 1;
@@ -188,7 +189,7 @@ public class ShelfSystemService
 
     public async Task<bool> UnloadValidationAsync(RelayCommand unload, string endPoint)
     {
-        var targetEqp = _eqpStatusList.FirstOrDefault(e => e.EqpName == unload.EqpName);
+        var targetEqp = _eqpStateList.FirstOrDefault(e => e.EqpName == unload.EqpName);
         if (targetEqp == null) return false;
         await PostHttpClientAsync(unload, endPoint);
         return true;
@@ -253,7 +254,7 @@ public class ShelfSystemService
                     expiredCts.Dispose(); 
                 }
             }
-            UpdateEqpStatus(sendCommand.EqpName, "");
+            UpdateEqpState(sendCommand.EqpName, "");
         });
     }
 
