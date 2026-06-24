@@ -3,3 +3,38 @@
 @{
     ViewData["Title"] = "搬送一覧表示";
 }
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="stylesheet" href="/css/site.css" />
+
+    <title>搬送一覧表示画面</title>
+</head>
+
+<body>
+
+    <!-- サーバー停止オーバーレイ -->
+    <div id="serverStopOverlay" class="card-img-overlay hidden">
+        <div class="overlay-text">サーバー停止中</div>
+    </div>
+
+    <!-- 搬送指示一覧画面 -->
+    <div id="screen-command-list" class="screen hidden">
+        <h2>搬送指示一覧</h2>
+
+        <div class="tabs">
+            <button class="tab-command" data-status="0">QUEUED</button>
+            <button class="tab-command" data-status="1">ACTIVE</button>
+            <button class="tab-command" data-status="history">履歴</button>
+        </div>
+
+        <div id="command-list"></div>
+
+        <button id="btn-back">戻る</button>
+    </div>
+
+    <script src="js/site.js"></script>
+</body>
