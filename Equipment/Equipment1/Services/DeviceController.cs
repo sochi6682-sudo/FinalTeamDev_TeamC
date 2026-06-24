@@ -89,8 +89,8 @@ public class DeviceController
     //-------------------------------------------------------------------------------
     public async Task InitAsync() 
     {
-        _consoleView.ShowInfo("保管設備起動");
-        Logger.Info("保管設備起動");
+        _consoleView.ShowInfo(" <<<<< 保管設備起動 >>>>>");
+        Logger.Info("========== 保管設備起動 ==========");
 
         //状態初期化
         _stateController.InitStatus();
@@ -116,9 +116,9 @@ public class DeviceController
             _stateController.SetCommunicationOffline();
             _stateController.SetAlarm();
 
-            await _apiClient.ReportAlarmAsync(_state.EqpName);
-
+            _consoleView.ShowAlarm("※　通信異常発生　※");
             Logger.Error("搬送指示要求GET 失敗");
+
         }
         else 
         {
@@ -137,17 +137,29 @@ public class DeviceController
             }
             else
             {
+                if (response.StatusCode == System.Net.HttpStatusCode.NoContent)
+                {
+                    // 204 指示なし
+                    _stateController.SetCommunicationOnline();
+
+                    Logger.Info("搬送指示要求GET 搬送指示なし");
+
+                    await Task.Delay(5000);
+                    return;
+                }
+
                 //通信成功
                 //レスポンスをcommandに入れる
                 Command? command = await response.Content.ReadFromJsonAsync<Command>();
 
                 //指示あり/なし
-                if (command == null || string.IsNullOrEmpty(command.CommandId))　
+                if (command == null || string.IsNullOrEmpty(command.CommandId))
                 {
-                    // 200だけど指示なし　ON-LINE状態へ
                     _stateController.SetCommunicationOnline();
-
                     Logger.Info("搬送指示要求GET 搬送指示なし");
+
+                    await Task.Delay(5000);
+                    return;
                 }
                 else　
                 {
@@ -162,6 +174,8 @@ public class DeviceController
                     _consoleView.ShowInfo("搬送指示受信");
                     _consoleView.ShowCommand(_currentCommand);
                     Logger.Info("搬送指示要求GET 搬送指示受信");
+                    
+                    return;
                 }
             }
         }
@@ -182,22 +196,22 @@ public class DeviceController
             return;
         }
 
-        _consoleView.ShowInfo("動作開始");
-        _consoleView.ShowCommand(_currentCommand);
-
         //入庫/出庫
-        if (_currentCommand.CommandType == 0)
+        if (_currentCommand.CommandType == 1)
         {
             //入庫：正常/異常完了選択処理へ
+            _consoleView.ShowInfo("動作開始");
             await SelectCompleteResult();
         }
         else
         {
+            _consoleView.ShowInfo("出庫口が空くまで待機中");
             //出庫：出庫可能状態まで待ち、正常/異常完了選択処理へ
             while (_state.RetrieveAvailability != RetrieveAvailability.Available)
             {
                 await Task.Delay(100);
             }
+            _consoleView.ShowInfo("動作開始");
             await SelectCompleteResult();
         }
 
@@ -209,10 +223,11 @@ public class DeviceController
     //-------------------------------------------------------------------------------
     public async Task SelectCompleteResult()
     {
+        _consoleView.ShowSelectCompleteInput();
+
         while (true)
         {
             //１）正常/異常　選択
-            _consoleView.ShowSelectCompleteInput();
             string? input = Console.ReadLine();
 
             //２）正常完了：IDLEになって報告し、実行した指示を消す
@@ -222,11 +237,11 @@ public class DeviceController
                 Logger.Info("正常完了選択");
 
                 //出庫であれば出庫不可に移行する
-                if (_currentCommand?.CommandType == 1)
+                if (_currentCommand?.CommandType == 0)
                 {
                     _stateController.SetRetrieveUnavailable();
 
-                    _consoleView.ShowInfo("出庫不可状態 待機中");
+                    _consoleView.ShowInfo("\"出庫口にキャリアが置かれて、出庫不可になりました");
                 }
 
                 _stateController.SetIdle();
@@ -305,7 +320,7 @@ public class DeviceController
     {
         _stateController.SetRetrieveAvailable();
 
-        _consoleView.ShowInfo("出庫可能");
+        _consoleView.ShowInfo("出庫口のキャリアが払出され、出庫可能になりました");
 
     }
 

@@ -14,8 +14,9 @@ public class ServerApiClient
     public ServerApiClient()
     {
         _httpClient = new HttpClient();
+        _httpClient.Timeout = TimeSpan.FromSeconds(3);
 
-        _httpClient.BaseAddress = new Uri("http://localhost:5000/");
+        _httpClient.BaseAddress = new Uri("http://172.16.7.22:5248/");
     }
 
 

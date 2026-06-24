@@ -24,6 +24,7 @@ internal class Program
             if (controller.CurrentState.LocalAlarmStatus == LocalAlarmStatus.Alarm)
             {
                 //ALARM処理
+                await controller.RunIdleLoopAsync();
                 await controller.RunAlarmProcessAsync();
             }
             else if (controller.CurrentState.OperatingStatus == OperatingStatus.Busy)
@@ -36,8 +37,6 @@ internal class Program
                 //IDLE処理
                 await controller.RunIdleLoopAsync();
             }
-
         }
-
     }
 }
