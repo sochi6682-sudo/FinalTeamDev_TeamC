@@ -1,40 +1,38 @@
 ﻿@page
 @model FinalAssigenment.Pages.CommandListModel
 @{
-    ViewData["Title"] = "搬送一覧表示";
+    ViewData["Title"] = "搬送指示一覧";
 }
 
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+<div class="page-container">
 
-    <link rel="manifest" href="/manifest.json" />
-    <link rel="stylesheet" href="/css/site.css" />
+    <h1>搬送指示一覧</h1>
 
-    <title>搬送一覧表示画面</title>
-</head>
-
-<body>
-
-    <!-- サーバー停止オーバーレイ -->
-    <div id="serverStopOverlay" class="card-img-overlay hidden">
-        <div class="overlay-text">サーバー停止中</div>
+    <div class="filter-tabs">
+        <button class="filter-tab active" data-command-filter="all">全件</button>
+        <button class="filter-tab" data-command-filter="queued">待機</button>
+        <button class="filter-tab" data-command-filter="active">実行中</button>
+        <button class="filter-tab" data-command-filter="history">履歴</button>
     </div>
 
-    <!-- 搬送指示一覧画面 -->
-    <div id="screen-command-list" class="screen hidden">
-        <h2>搬送指示一覧</h2>
+    <div class="table-responsive">
+        <table class="command-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Carrier</th>
+                    <th>棚</th>
+                    <th>種別</th>
+                    <th>状態</th>
+                </tr>
+            </thead>
 
-        <div class="tabs">
-            <button class="tab-command" data-status="0">QUEUED</button>
-            <button class="tab-command" data-status="1">ACTIVE</button>
-            <button class="tab-command" data-status="history">履歴</button>
-        </div>
+            <tbody id="command-list">
+            </tbody>
 
-        <div id="command-list"></div>
-
-        <button id="btn-back">戻る</button>
+        </table>
     </div>
 
-    <script src="js/site.js"></script>
-</body>
+    <a class="back-button" href="/">メニューへ戻る</a>
+
+</div>
