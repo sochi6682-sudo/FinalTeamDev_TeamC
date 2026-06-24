@@ -4,33 +4,19 @@
     ViewData["Title"] = "在庫一覧";
 }
 
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+<div class="page-container">
+    <h1>在庫一覧</h1>
 
-    <link rel="manifest" href="/manifest.json" />
-    <link rel="stylesheet" href="/css/site.css" />
-
-    <title>在庫一覧画面</title>
-</head>
-
-<body>
-
-    <!-- サーバー停止オーバーレイ -->
-    <div id="serverStopOverlay" class="card-img-overlay hidden">
-        <div class="overlay-text">サーバー停止中</div>
+    <div class="inventory-filter-card">
+        <label>保管設備を選択</label>
+        <select id="inventory-eqp-filter" class="inventory-select">
+            <option value="1">保管設備 1</option>
+            <option value="2">保管設備 2</option>
+            <option value="3">保管設備 3</option>
+        </select>
     </div>
 
-    <!-- 在庫一覧画面 -->
-    <div id="screen-inventory" class="modal-fullscreen hidden">
-        <h2>在庫一覧</h2>
+    <div id="inventory-rack-area"></div>
 
-        キャリアID検索:<input id="search-carrier" type="text">
-
-        <div id="inventory-list"></div>
-
-        <button id="btn-back">戻る</button>
-    </div>
-
-    <script src="js/site.js"></script>
-</body>
+    <a class="back-button" href="/">メニューへ戻る</a>
+</div>
