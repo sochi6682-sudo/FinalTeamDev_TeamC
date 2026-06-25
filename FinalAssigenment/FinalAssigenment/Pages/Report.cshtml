@@ -1,15 +1,22 @@
 ﻿@page
 @model FinalAssigenment.Pages.ReportModel
 @{
-    ViewData["Title"] = "出庫搬送完了報告受信・払出完了報告";
+    ViewData["Title"] = "出庫搬送完了報告受信";
 }
 
-<div id="page-outbound-complete" class="page-container">
+<div id="page-outbound-report" class="page-container">
 
-    <h1>出庫完了報告</h1>
+    <h1>
+        出庫搬送完了報告受信<br>
+        払出完了報告
+    </h1>
 
-    <div id="outbound-complete-list"></div>
+    <div id="outbound-report-list">
+    </div>
 
-    <button id="btn-back" class="back-button">戻る</button>
+    <button class="back-button"
+            onclick="location.href='/'">
+        戻る
+    </button>
 
 </div>

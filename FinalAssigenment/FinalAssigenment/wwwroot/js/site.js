@@ -423,119 +423,69 @@ function getCommandStatusClass(status) {
 // ===============================
 // 出庫完了報告
 // ===============================
-function initOutboundCompletePage() {
+function updateOutboundReport() {
 
-    if (!document.getElementById("page-outbound-complete")) return;
+    const area =
+        document.getElementById("outbound-report-list");
 
-    document.getElementById("btn-back").addEventListener("click", () => {
-        window.location.href = "/"; // メニュー画面へ戻る
-    });
+    if (!area) return;
 
-    fetchOutboundData();
-    setInterval(fetchOutboundData, 1000);
-}
-
-// ===============================
-// DB から棚情報・コマンド情報取得
-// ===============================
-async function fetchOutboundData() {
-    const [shelfRes, cmdRes] = await Promise.all([
-        fetch("/api/shelf-system/shelves"),
-        fetch("/api/shelf-system/commands")
-    ]);
-
-    latestShelves = await shelfRes.json();
-    latestCommands = await cmdRes.json();
-
-    updateOutboundCompleteList();
-}
-
-// ===============================
-// 出庫完了報告リスト更新
-// ===============================
-function updateOutboundCompleteList() {
-
-    const area = document.getElementById("outbound-complete-list");
     area.innerHTML = "";
 
-    // 必ず表示する棚リスト
-    const shelfGroups = ["01", "02", "03"];
+    const targets =
+        latestCommands.filter(command =>
+            command.commandType === 1);
 
-    shelfGroups.forEach(group => {
+    targets.forEach(command => {
 
-        // この棚に属する棚データ（あれば）
-        const shelves = latestShelves.filter(s => s.shelfLocation.startsWith(group));
+        const completed =
+            command.commandStatus === 2;
 
-        // 出庫コマンド（あれば）
-        const cmd = latestCommands.find(c =>
-            c.commandType === 1 &&
-            shelves.some(s => s.carrierId === c.carrierId)
-        );
+        const div =
+            document.createElement("div");
 
-        // オフライン判定（設備があれば）
-        const eqp = latestEquipments.find(e => e.eqpName.endsWith(group));
-        const isOffline = eqp && eqp.controlState !== "Online";
-
-        const div = document.createElement("div");
         div.className = "outbound-item";
 
         div.innerHTML = `
-            <div class="outbound-title">保管棚${group}</div>
+            <div class="outbound-info">
 
-            <div class="outbound-row">
-                <span class="outbound-label">CommandID:</span>
-                <span>${cmd ? cmd.commandId : "-"}</span>
+                <div class="outbound-shelf">
+                    保管棚${command.location}
+                </div>
+
+                <div class="outbound-data">
+                    CommandID<br>
+                    ${command.commandId}
+                </div>
+
+                <div class="outbound-data">
+                    CarrierID<br>
+                    ${command.carrierId}
+                </div>
+
             </div>
 
-            <div class="outbound-row">
-                <span class="outbound-label">CarrierID:</span>
-                <span>${cmd ? cmd.carrierId : "-"}</span>
-            </div>
+            <div class="outbound-action">
 
-            <div class="outbound-row">
-                <span class="outbound-label">状態:</span>
-                <span>
-                    <div class="lamp-complete ${isOffline ? "lamp-offline" : ""}"></div>
-                </span>
-            </div>
+                <div class="status-lamp
+                    ${completed ? "on" : "off"}">
+                </div>
 
-            <button class="btn-complete ${(!cmd || isOffline) ? "disabled" : ""}">
-                ✓ 払出完了
-            </button>
+                <button
+                    class="complete-button"
+                    ${completed ? "disabled" : ""}
+                    onclick="completeOutbound(${command.commandId})">
+
+                    √ 払出完了
+
+                </button>
+
+            </div>
         `;
-
-        // ボタン動作（cmd が無い or オフラインなら無効）
-        const btn = div.querySelector(".btn-complete");
-        if (cmd && !isOffline) {
-            btn.addEventListener("click", () => sendOutboundComplete(cmd, btn));
-        }
 
         area.appendChild(div);
     });
 }
-
-
-// ===============================
-// 払出完了 POST
-// ===============================
-async function sendOutboundComplete(cmd, btn) {
-
-    if (!cmd) return;
-
-    const res = await fetch("/api/shelf-system/outbound-complete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ commandId: cmd.commandId })
-    });
-
-    if (res.ok) {
-        btn.classList.add("disabled");
-        btn.textContent = "完了済み";
-    }
-}
-
-// ===============================
-document.addEventListener("DOMContentLoaded", initOutboundCompletePage);
 
 
 //＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
