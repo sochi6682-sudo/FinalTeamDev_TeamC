@@ -4,6 +4,7 @@ using FinalAssigenment.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.Design;
+using System.Text.Json;
 
 namespace FinalAssigenment.Contorollers;
 
@@ -67,6 +68,8 @@ public class ShelfSystemController : ControllerBase
         try
         {
             _logger.LogInformation($"[Info] 搬送指示受信");
+            string jsonString = JsonSerializer.Serialize(newCommand, new JsonSerializerOptions { WriteIndented = true });
+            Console.WriteLine($"[Debug] 受信データ内容:\n{jsonString}");
             DateTime receptionAt = DateTime.Now;
             await _service.InsertValidationAsync(newCommand, receptionAt);
             return StatusCode(201, new 
@@ -89,8 +92,7 @@ public class ShelfSystemController : ControllerBase
         try
         {
             _logger.LogInformation("[Info] 設備へ払出完了報告開始");
-            _endPointName = HttpContext.Request.Path.Value.Split('/').Last();
-            bool isValueCheck = await _service.UnloadValidationAsync(unload, _endPointName);
+            bool isValueCheck = await _service.UnloadValidationAsync(unload);
             if (!isValueCheck)
             {
                 return NotFound();
@@ -150,15 +152,6 @@ public class ShelfSystemController : ControllerBase
             if (completion.CommandType == 0)
             {
                 _logger.LogInformation($"[Info] 在庫削除 CarrierID＝{completion.CarrierId},ShelfLocation＝{completion.Location}");
-                _logger.LogInformation("[Info] スマホへ出庫完了報告開始");
-                RelayCommand sendCommand = new()
-                {
-                    CommandId = completion.CommandId,
-                    CarrierId = completion.CarrierId,
-                    EqpName = completion.EqpName
-                };
-                await _service.PostHttpClientAsync(sendCommand, _endPointName);
-                _logger.LogInformation("[Info] スマホへ出庫完了報告成功");
             }
             else if(completion.CommandType == 1)
             {
@@ -172,7 +165,7 @@ public class ShelfSystemController : ControllerBase
         }
     }
     [HttpPost("incident")]
-    public IActionResult PostIncident([FromBody] IncidentEquipment incident)
+    public IActionResult PostIncident([FromBody] EquipmentName incident)
     {
         try
         {
@@ -188,7 +181,7 @@ public class ShelfSystemController : ControllerBase
         }
     }
     [HttpPost("recovery")]
-    public IActionResult PostRecovery([FromBody] IncidentEquipment recovery)
+    public IActionResult PostRecovery([FromBody] EquipmentName recovery)
     {
         try
         {
