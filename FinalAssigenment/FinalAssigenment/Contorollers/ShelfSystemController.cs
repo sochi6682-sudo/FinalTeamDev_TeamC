@@ -30,14 +30,14 @@ public class ShelfSystemController : ControllerBase
     {
         try
         {
-            _logger.LogInformation($"[Info] 情報取得開始");
+            _logger.LogInformation("[Info] 情報取得開始");
             var systemInfo = await _repository.SelectInfomationAsync();
             systemInfo.States = _service.EqpStateList;
             return Ok(systemInfo);
         }
         catch (Exception ex)
         {
-            return StatusCode(500, $"情報取得失敗");
+            return StatusCode(500, "情報取得失敗");
         }
     }
     [HttpGet("request")]
@@ -52,13 +52,13 @@ public class ShelfSystemController : ControllerBase
             if (sendCommand != null)
             {
                 _service.TimeoutOccurred(sendCommand);
-                _logger.LogInformation($"[Info] 搬送指示送信 CommandID＝{sendCommand.CommandId},EqpName＝{sendCommand.EqpName}");
+                _logger.LogInformation("[Info] 搬送指示送信 CommandID＝{sendCommand.CommandId},EqpName＝{sendCommand.EqpName}");
             }
             return Ok(sendCommand);
         }
         catch (Exception ex)
         {
-            return StatusCode(500, $"[Error]搬送指示要求GET失敗");
+            return StatusCode(500, "[Error]搬送指示要求GET失敗");
         }
     }
     [HttpPost("command")]
@@ -80,7 +80,7 @@ public class ShelfSystemController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, $"[Error]搬送指示登録失敗");
+            return StatusCode(500, "[Error]搬送指示登録失敗");
         }
     }
     [HttpPost("unload")]
@@ -102,7 +102,7 @@ public class ShelfSystemController : ControllerBase
         catch (Exception ex)
         {
             
-            return StatusCode(500, $"[Error]サーバへ払出完了報告失敗");
+            return StatusCode(500, "[Error]サーバへ払出完了報告失敗");
         }
     }
     [HttpPost("online")]
@@ -118,7 +118,7 @@ public class ShelfSystemController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, $"[Error] 設備ONLINE報告失敗");
+            return StatusCode(500, "[Error] 設備ONLINE報告失敗");
         }
     }
     [HttpPost("start")]
@@ -133,7 +133,7 @@ public class ShelfSystemController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, $"[Error] 搬送指示開始報告失敗");
+            return StatusCode(500, "[Error] 搬送指示開始報告失敗");
         }
     }
     [HttpPost("completion")]
@@ -168,7 +168,7 @@ public class ShelfSystemController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, $"[Error] 搬送指示完了報告失敗");
+            return StatusCode(500, "[Error] 搬送指示完了報告失敗");
         }
     }
     [HttpPost("incident")]
@@ -184,7 +184,7 @@ public class ShelfSystemController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, $"[Error]異常発生報告失敗");
+            return StatusCode(500, "[Error]異常発生報告失敗");
         }
     }
     [HttpPost("recovery")]
@@ -200,7 +200,7 @@ public class ShelfSystemController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, $"[Error]異常復旧報告失敗");
+            return StatusCode(500, "[Error]異常復旧報告失敗");
         }
     }
 
