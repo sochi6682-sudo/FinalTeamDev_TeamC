@@ -32,7 +32,7 @@ public class ShelfSystemController : ControllerBase
         {
             _logger.LogInformation($"[Info] 情報取得開始");
             var systemInfo = await _repository.SelectInfomationAsync();
-            systemInfo.Status = _service.EqpStateList;
+            systemInfo.States = _service.EqpStateList;
             return Ok(systemInfo);
         }
         catch (Exception ex)

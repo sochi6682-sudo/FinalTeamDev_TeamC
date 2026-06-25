@@ -57,7 +57,7 @@ public class SqlRepository
 
                 _getResultInfomation = new()
                 {
-                    Status = [],
+                    States = [],
                     Commands = commands,
                     Shelves = shelves
                 };
