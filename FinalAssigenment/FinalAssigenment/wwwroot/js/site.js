@@ -421,24 +421,49 @@ function getCommandStatusClass(status) {
 }
 
 // ===============================
-// 出庫完了報告
+// 出庫完了報告画面初期化
+// ===============================
+function initOutboundReportPage() {
+
+    const page =
+        document.getElementById(
+            "page-outbound-report"
+        );
+
+    if (!page) return;
+
+    updateOutboundReport();
+}
+
+document.addEventListener(
+    "DOMContentLoaded",
+    initOutboundReportPage
+);
+
+// ===============================
+// 出庫完了報告更新
 // ===============================
 function updateOutboundReport() {
 
     const area =
-        document.getElementById("outbound-report-list");
+        document.getElementById(
+            "outbound-report-list"
+        );
 
     if (!area) return;
 
     area.innerHTML = "";
 
-    const targets =
-        latestCommands.filter(command =>
-            command.commandType === 1);
+    latestShelves.forEach(shelf => {
 
-    targets.forEach(command => {
+        const command =
+            latestCommands.find(x =>
+                x.location === shelf.shelfLocation &&
+                x.commandType === 1
+            );
 
         const completed =
+            command &&
             command.commandStatus === 2;
 
         const div =
@@ -450,31 +475,44 @@ function updateOutboundReport() {
             <div class="outbound-info">
 
                 <div class="outbound-shelf">
-                    保管棚${command.location}
+                    保管棚${shelf.shelfLocation}
                 </div>
 
                 <div class="outbound-data">
                     CommandID<br>
-                    ${command.commandId}
+                    ${command ? command.commandId : "----"}
                 </div>
 
                 <div class="outbound-data">
                     CarrierID<br>
-                    ${command.carrierId}
+                    ${command ? command.carrierId : "----"}
                 </div>
 
             </div>
 
             <div class="outbound-action">
 
-                <div class="status-lamp
+                <div class="
+                    status-lamp
                     ${completed ? "on" : "off"}">
                 </div>
 
                 <button
-                    class="complete-button"
-                    ${completed ? "disabled" : ""}
-                    onclick="completeOutbound(${command.commandId})">
+                    class="
+                        complete-button
+                        ${completed
+                ? "completed"
+                : "waiting"}"
+                    ${completed
+                ? "disabled"
+                : ""}
+
+                    onclick="
+                        completeOutbound(
+                            ${command
+                ? command.commandId
+                : 0}
+                        )">
 
                     √ 払出完了
 
@@ -484,6 +522,25 @@ function updateOutboundReport() {
         `;
 
         area.appendChild(div);
+    });
+}
+
+// ===============================
+// 出庫完了報告
+// ===============================
+function initOutboundReportPage() {
+    const page = document.getElementById("page-outbound-report"); if (!page) return; updateOutboundReport();
+}
+document.addEventListener("DOMContentLoaded", initOutboundReportPage);
+function updateOutboundReport() {
+    const area = document.getElementById("outbound-report-list");
+    if (!area) return;
+    area.innerHTML = "";
+    latestShelves.forEach(shelf => {
+        const command = latestCommands.find(x => x.location === shelf.shelfLocation && x.commandType === 1);
+        const completed = command && command.commandStatus === 2;
+        const div = document.createElement("div");
+        div.className = "outbound-item"; div.innerHTML = `<div class="outbound-info"> <div class="outbound-shelf"> 保管棚${shelf.shelfLocation} </div> <div class="outbound-data"> CommandID<br> ${command ? command.commandId : "----"} </div> <div class="outbound-data"> CarrierID<br> ${command ? command.carrierId : "----"} </div> </div> <div class="outbound-action"> <div class=" status-lamp ${completed ? "on" : "off"}"> </div> <button class=" complete-button ${completed ? "completed" : "waiting"}" ${ completed ? "disabled" : "" } onclick = "completeOutbound( ${command ? command.commandId : 0})" > √ 払出完了 </button > </div >`; area.appendChild(div);
     });
 }
 

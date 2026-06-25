@@ -310,7 +310,7 @@ body {
 
     .page-container h1 {
         text-align: center;
-        color: red;
+        color: black;
         font-size: 28px;
         margin-bottom: 25px;
     }
@@ -420,7 +420,7 @@ body {
 }
 
     .page-container h1 {
-        color: red;
+        color: black;
         font-size: 24px;
         text-align: center;
         margin-bottom: 25px;
@@ -470,20 +470,23 @@ body {
     }
 
     .status-lamp.off {
-        background: #ccc;
+        background: #bdbdbd;
     }
 
 .complete-button {
     padding: 10px 20px;
-    background: #45a52d;
-    color: white;
     border: none;
     border-radius: 6px;
     font-size: 18px;
+    color: white;
 }
 
-    .complete-button:disabled {
-        background: #999;
+    .complete-button.waiting {
+        background: #bdbdbd;
+    }
+
+    .complete-button.completed {
+        background: limegreen;
     }
 
 .back-button {
