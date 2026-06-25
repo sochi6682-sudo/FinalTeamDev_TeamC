@@ -273,7 +273,10 @@ public class SqlRepository
                       --未完了と正常完了の搬送指示のキャリアIDと棚を取得
                       SELECT 
                       carrier_id AS CarrierId,
-                      location AS Location
+                      CASE 
+                        WHEN command_status IN (0, 1) THEN location
+                        WHEN command_status = 2 THEN NULL
+                      END AS Location
                       FROM commands
                       WHERE command_status != 3;";
 
@@ -284,6 +287,7 @@ public class SqlRepository
 
                 var shelfList = (await multi.ReadAsync<Shelf>()).ToList();
                 var incompleteCommandList = (await multi.ReadAsync<(string CarrierId, string Location)>()).ToList();
+                
                 return (shelfList, incompleteCommandList);
             }
             catch (Exception ex)

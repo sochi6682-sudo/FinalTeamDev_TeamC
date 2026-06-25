@@ -96,6 +96,7 @@ public class ShelfSystemService
         else if (newCommand.EqpName == "EQP02") prefix = "2%"; 
         else if (newCommand.EqpName == "EQP03") prefix = "3%";
         var (shelfList, incompleteCommandList) = await _repository.SelectShelfInformationAsync(prefix);
+
         if (newCommand.CommandType == 1)
         {
             bool isCarrierAlreadyStored = shelfList.Any(s => s.StoredCarrierId == newCommand.CarrierId)
