@@ -4,6 +4,12 @@ using System.Text;
 
 namespace Equipment1.Models;
 
+//public enum CommandType
+//{
+//    Out = 0,
+//    In = 1
+//}
+
 public class Command
 {
     public string CommandId { get; set; } = "";

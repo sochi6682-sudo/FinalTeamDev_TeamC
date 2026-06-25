@@ -1,4 +1,5 @@
-﻿using Equipment1.Models;
+﻿using Equipment1.Controllers;
+using Equipment1.Models;
 using NLog;
 using System.Net;
 using System.Text;
