@@ -80,9 +80,19 @@ public class ShelfSystemService
         {
             throw new HttpRequestException("キャリアID の命名規則が不正です。", null, System.Net.HttpStatusCode.BadRequest);
         }
+        foreach(var e in _eqpStateList)
+        {
+            Console.WriteLine($"{e.EqpName}:{newCommand.EqpName}");
+            if(e.EqpName != newCommand.EqpName)
+            {
+                Console.WriteLine("一致してない");
+            }
+        }
+        
         var targetEqp = _eqpStateList.FirstOrDefault(e => e.EqpName == newCommand.EqpName);
         if (targetEqp == null)
         {
+
             throw new HttpRequestException("設備IDが存在しません。", null, System.Net.HttpStatusCode.NotFound);
         }
         if (targetEqp.ControlState == 0)
@@ -188,39 +198,30 @@ public class ShelfSystemService
         }
     }
 
-    public async Task<bool> UnloadValidationAsync(RelayCommand unload, string endPoint)
+    public async Task<bool> UnloadValidationAsync(RelayCommand unload)
     {
         var targetEqp = _eqpStateList.FirstOrDefault(e => e.EqpName == unload.EqpName);
         if (targetEqp == null) return false;
-        await PostHttpClientAsync(unload, endPoint);
+        await _repository.UpdateCommandStatusAsync(unload.CommandId, 4);
+        //await PostHttpClientAsync(unload);
         return true;
         
     }
 
-    public async Task PostHttpClientAsync(RelayCommand sendCommand, string endPoint)
+    public async Task PostHttpClientAsync(RelayCommand sendCommand)
     {
         string url = "";
-        if (endPoint == "completion") url = "http://localhost:5248"; // スマホのURL
-        else if (endPoint == "unload")
-        {
-            if (sendCommand.EqpName == "EQP01") url = _eqpBaseUrls[0];
-            else if (sendCommand.EqpName == "EQP02") url = _eqpBaseUrls[1];
-            else if (sendCommand.EqpName == "EQP03") url = _eqpBaseUrls[2];
-        }
+
+        if (sendCommand.EqpName == "EQP01") url = _eqpBaseUrls[0];
+        else if (sendCommand.EqpName == "EQP02") url = _eqpBaseUrls[1];
+        else if (sendCommand.EqpName == "EQP03") url = _eqpBaseUrls[2];
         try
         {
-            var response = await _httpClient.PostAsJsonAsync($"{url}/api/shelf-system/{endPoint}", sendCommand);
+            var response = await _httpClient.PostAsJsonAsync($"{url}/api/shelf-system/unload", sendCommand);
         }
         catch(Exception ex)
         {
-            if(endPoint == "unload")
-            {
-                _logger.LogError(ex, "[Error] 設備へ払出完了報告失敗");
-            }
-            else if (endPoint == "completion")
-            {
-                _logger.LogError(ex, "[Error] スマホへ出庫完了報告失敗");
-            }
+            _logger.LogError(ex, "[Error] 設備へ払出完了報告失敗");
             throw;
         }
     }

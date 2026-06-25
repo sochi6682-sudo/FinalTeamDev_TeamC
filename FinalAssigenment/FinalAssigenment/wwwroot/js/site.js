@@ -2,6 +2,7 @@
 let latestShelves = [];
 let latestCommands = [];
 let latestEquipments = [];
+const eqpList = ["EQP01", "EQP02", "EQP03"];
 
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -95,7 +96,7 @@ function updateScreensOn200() {
     serverOnline = true;
     hideServerStopOverlay();
     enableAllControls();
-
+    updateOutboundReport();
     updateInventoryList();
     updateCommandList();
     updateEquipmentStatus();
@@ -125,28 +126,27 @@ function initCommandSendPage() {
     document.getElementById("btn-outbound")
         .addEventListener("click", sendOutboundCommand);
 
-    updateCommandSend();
+    updateShelfSelect();
 
-    setInterval(updateCommandSend, 5000);
+    //setInterval(updateCommandSend, 5000);
 }
 
 //＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
 // 画面更新
 //＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
 
-function updateCommandSend() {
+//function updateCommandSend() {
 
-    updateShelfSelect();
+//    updateShelfSelect();
 
-    updateCommandEquipStatus();
-}
+//    updateCommandEquipStatus();
+//}
 
 //＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
 // キャリアID更新
 //＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
 
 function updateShelfSelect() {
-
     const select =
         document.getElementById("shelfIdSelect");
 
@@ -155,13 +155,11 @@ function updateShelfSelect() {
     select.innerHTML =
         '<option value="">選択してください</option>';
 
-    latestShelves.forEach(shelf => {
+    eqpList.forEach(eqpName => {
+        const option = document.createElement("option");
 
-        const option =
-            document.createElement("option");
-
-        option.value = shelf.shelfLocation;
-        option.textContent = shelf.shelfLocation;
+        option.value = eqpName;
+        option.textContent = eqpName;
 
         select.appendChild(option);
     });
@@ -194,8 +192,8 @@ async function sendInboundCommand() {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                commandType: 0,
-                shelfLocation: shelfId,
+                commandType: 1,
+                eqpName: shelfId,
                 carrierId: carrierId
             })
         });
@@ -216,7 +214,8 @@ async function sendOutboundCommand() {
 
     const carrierId =
         document.getElementById("carrierIdInput").value;
-
+    const shelfId =
+        document.getElementById("shelfIdSelect").value;
     if (!carrierId) {
 
         showResult("キャリアIDを選択してください");
@@ -232,8 +231,8 @@ async function sendOutboundCommand() {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                commandType: 1,
-                shelfLocation: null,
+                commandType: 0,
+                eqpName: shelfId,
                 carrierId: carrierId
             })
         });
@@ -255,7 +254,7 @@ function updateCommandEquipStatus() {
     const area = document.getElementById("command-equip-status");
     if (!area) return;
 
-    area.innerHTML = "";
+    //area.innerHTML = "";
 
     const eqpNames = ["EQP01", "EQP02", "EQP03"];
 
@@ -430,8 +429,9 @@ function getCommandStatusClass(status) {
     return "";
 }
 
+
 // ===============================
-// 出庫完了報告画面初期化
+// 出庫完了報告
 // ===============================
 //function initOutboundReportPage() {
 
@@ -547,8 +547,14 @@ function updateOutboundReport() {
 
     const area = document.getElementById("outbound-report-list");
     if (!area) return;
-
     area.innerHTML = "";
+    eqpList.forEach(eqpName => {
+        const shelf = latestShelves.find(s => {
+            const locStr = String(s.shelfLocation || "");
+            if (eqpName === "EQP01") return locStr.startsWith("1");
+            if (eqpName === "EQP02") return locStr.startsWith("2");
+            if (eqpName === "EQP03") return locStr.startsWith("3");
+        });
 
     const eqpNames = ["EQP01", "EQP02", "EQP03"];
 
@@ -564,7 +570,6 @@ function updateOutboundReport() {
 
         const div = document.createElement("div");
         div.className = "outbound-item";
-
         div.innerHTML = `
             <div class="outbound-info">
 

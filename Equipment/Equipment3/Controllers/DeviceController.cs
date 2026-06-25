@@ -1,11 +1,12 @@
-﻿using Equipment1.Models;
+﻿using Equipment3.Models;
+using Equipment3.Services;
 using NLog;
 using System;
 using System.Collections.Generic;
 using System.Net.Http.Json;
 using System.Text;
 
-namespace Equipment1.Services;
+namespace Equipment3.Controllers;
 
 public class DeviceController
 {
@@ -37,8 +38,9 @@ public class DeviceController
         get { return _state; }
     }
 
-    //報告用状態受渡
-    public StateReport GetStateReport()
+	//報告用状態受渡
+	//-------------------------------------------------------------------------------
+	public StateReport GetStateReport()
     {
         return CreateStateReport();
     }
@@ -53,11 +55,11 @@ public class DeviceController
         //通信状態変換
         if (_state.CommunicationStatus == CommunicationStatus.Online)
         {
-            report.ControlState = ControlState.Online;
+            report.ControlStates = ControlStates.Online;
         }
         else
         {
-            report.ControlState = ControlState.Offline;
+            report.ControlStates = ControlStates.Offline;
         }
 
         //設備状態変換
@@ -90,7 +92,6 @@ public class DeviceController
     public async Task InitAsync() 
     {
         _consoleView.ShowInfo(" <<<<< 保管設備起動 >>>>>");
-        Logger.Info("========== 保管設備起動 ==========");
 
         //状態初期化
         _stateController.InitStatus();
@@ -241,7 +242,7 @@ public class DeviceController
                 {
                     _stateController.SetRetrieveUnavailable();
 
-                    _consoleView.ShowInfo("\"出庫口にキャリアが置かれて、出庫不可になりました");
+                    _consoleView.ShowInfo("出庫口にキャリアが置かれて、出庫不可になりました");
                 }
 
                 _stateController.SetIdle();

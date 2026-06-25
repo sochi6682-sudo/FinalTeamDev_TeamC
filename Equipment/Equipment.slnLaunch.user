@@ -1,0 +1,19 @@
+[
+  {
+    "Name": "新しいプロファイル",
+    "Projects": [
+      {
+        "Path": "Equipment1\\Equipment1.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "Equipment2\\Equipment2.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "Equipment3\\Equipment3.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]
