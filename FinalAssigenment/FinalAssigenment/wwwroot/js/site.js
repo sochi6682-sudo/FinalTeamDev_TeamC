@@ -2,6 +2,7 @@
 let latestShelves = [];
 let latestCommands = [];
 let latestEquipments = [];
+const eqpList = ["EQP01", "EQP02", "EQP03"];
 
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -80,7 +81,7 @@ async function fetchStatus() {
         latestShelves = data.shelves ?? [];
         latestCommands = data.commands ?? [];
         latestEquipments = data.status ?? [];
-
+        updateCommandEquipStatus();
         updateScreensOn200();
     } catch {
         handleServerError();
@@ -92,7 +93,7 @@ function updateScreensOn200() {
     serverOnline = true;
     hideServerStopOverlay();
     enableAllControls();
-
+    updateOutboundReport();
     updateInventoryList();
     updateCommandList();
     updateEquipmentStatus();
@@ -122,28 +123,27 @@ function initCommandSendPage() {
     document.getElementById("btn-outbound")
         .addEventListener("click", sendOutboundCommand);
 
-    updateCommandSend();
+    updateShelfSelect();
 
-    setInterval(updateCommandSend, 5000);
+    //setInterval(updateCommandSend, 5000);
 }
 
 //＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
 // 画面更新
 //＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
 
-function updateCommandSend() {
+//function updateCommandSend() {
 
-    updateShelfSelect();
+//    updateShelfSelect();
 
-    updateCommandEquipStatus();
-}
+//    updateCommandEquipStatus();
+//}
 
 //＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
 // キャリアID更新
 //＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
 
 function updateShelfSelect() {
-
     const select =
         document.getElementById("shelfIdSelect");
 
@@ -152,13 +152,11 @@ function updateShelfSelect() {
     select.innerHTML =
         '<option value="">選択してください</option>';
 
-    latestShelves.forEach(shelf => {
+    eqpList.forEach(eqpName => {
+        const option = document.createElement("option");
 
-        const option =
-            document.createElement("option");
-
-        option.value = shelf.shelfLocation;
-        option.textContent = shelf.shelfLocation;
+        option.value = eqpName;
+        option.textContent = eqpName;
 
         select.appendChild(option);
     });
@@ -191,8 +189,8 @@ async function sendInboundCommand() {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                commandType: 0,
-                shelfLocation: shelfId,
+                commandType: 1,
+                eqpName: shelfId,
                 carrierId: carrierId
             })
         });
@@ -213,7 +211,8 @@ async function sendOutboundCommand() {
 
     const carrierId =
         document.getElementById("carrierIdInput").value;
-
+    const shelfId =
+        document.getElementById("shelfIdSelect").value;
     if (!carrierId) {
 
         showResult("キャリアIDを選択してください");
@@ -229,8 +228,8 @@ async function sendOutboundCommand() {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                commandType: 1,
-                shelfLocation: null,
+                commandType: 0,
+                eqpName: shelfId,
                 carrierId: carrierId
             })
         });
@@ -254,7 +253,7 @@ function updateCommandEquipStatus() {
 
     if (!area) return;
 
-    area.innerHTML = "";
+    //area.innerHTML = "";
 
     latestEquipments.forEach(equipment => {
 
@@ -420,110 +419,6 @@ function getCommandStatusClass(status) {
     return "";
 }
 
-// ===============================
-// 出庫完了報告画面初期化
-// ===============================
-function initOutboundReportPage() {
-
-    const page =
-        document.getElementById(
-            "page-outbound-report"
-        );
-
-    if (!page) return;
-
-    updateOutboundReport();
-}
-
-document.addEventListener(
-    "DOMContentLoaded",
-    initOutboundReportPage
-);
-
-// ===============================
-// 出庫完了報告更新
-// ===============================
-function updateOutboundReport() {
-
-    const area =
-        document.getElementById(
-            "outbound-report-list"
-        );
-
-    if (!area) return;
-
-    area.innerHTML = "";
-
-    latestShelves.forEach(shelf => {
-
-        const command =
-            latestCommands.find(x =>
-                x.location === shelf.shelfLocation &&
-                x.commandType === 1
-            );
-
-        const completed =
-            command &&
-            command.commandStatus === 2;
-
-        const div =
-            document.createElement("div");
-
-        div.className = "outbound-item";
-
-        div.innerHTML = `
-            <div class="outbound-info">
-
-                <div class="outbound-shelf">
-                    保管棚${shelf.shelfLocation}
-                </div>
-
-                <div class="outbound-data">
-                    CommandID<br>
-                    ${command ? command.commandId : "----"}
-                </div>
-
-                <div class="outbound-data">
-                    CarrierID<br>
-                    ${command ? command.carrierId : "----"}
-                </div>
-
-            </div>
-
-            <div class="outbound-action">
-
-                <div class="
-                    status-lamp
-                    ${completed ? "on" : "off"}">
-                </div>
-
-                <button
-                    class="
-                        complete-button
-                        ${completed
-                ? "completed"
-                : "waiting"}"
-                    ${completed
-                ? "disabled"
-                : ""}
-
-                    onclick="
-                        completeOutbound(
-                            ${command
-                ? command.commandId
-                : 0}
-                        )">
-
-                    √ 払出完了
-
-                </button>
-
-            </div>
-        `;
-
-        area.appendChild(div);
-    });
-}
 
 // ===============================
 // 出庫完了報告
@@ -531,19 +426,97 @@ function updateOutboundReport() {
 function initOutboundReportPage() {
     const page = document.getElementById("page-outbound-report"); if (!page) return; updateOutboundReport();
 }
-document.addEventListener("DOMContentLoaded", initOutboundReportPage);
+
 function updateOutboundReport() {
     const area = document.getElementById("outbound-report-list");
     if (!area) return;
     area.innerHTML = "";
-    latestShelves.forEach(shelf => {
-        const command = latestCommands.find(x => x.location === shelf.shelfLocation && x.commandType === 1);
+    eqpList.forEach(eqpName => {
+        const shelf = latestShelves.find(s => {
+            const locStr = String(s.shelfLocation || "");
+            if (eqpName === "EQP01") return locStr.startsWith("1");
+            if (eqpName === "EQP02") return locStr.startsWith("2");
+            if (eqpName === "EQP03") return locStr.startsWith("3");
+        });
+
+        const command = latestCommands.find(x =>
+            x.location === (shelf ? shelf.shelfLocation : null) &&
+            x.commandType === 0
+        );
+
         const completed = command && command.commandStatus === 2;
         const div = document.createElement("div");
-        div.className = "outbound-item"; div.innerHTML = `<div class="outbound-info"> <div class="outbound-shelf"> 保管棚${shelf.shelfLocation} </div> <div class="outbound-data"> CommandID<br> ${command ? command.commandId : "----"} </div> <div class="outbound-data"> CarrierID<br> ${command ? command.carrierId : "----"} </div> </div> <div class="outbound-action"> <div class=" status-lamp ${completed ? "on" : "off"}"> </div> <button class=" complete-button ${completed ? "completed" : "waiting"}" ${ completed ? "disabled" : "" } onclick = "completeOutbound( ${command ? command.commandId : 0})" > √ 払出完了 </button > </div >`; area.appendChild(div);
+
+        div.className = "outbound-item";
+        div.innerHTML = `
+        <div class="outbound-info">
+                <div class="outbound-shelf">設備ID ${eqpName}</div> 
+                <div class="outbound-data">搬送指示ID<br>${command ? command.commandId : "----"}</div> 
+                <div class="outbound-data">キャリアID<br>${command ? command.carrierId : "----"}</div> 
+        </div>
+        <div class="outbound-action">
+            <div class="status-lamp ${completed ? "on" : "off"}"></div> 
+            <button class="complete-button ${completed ? "completed" : "waiting"}" ${completed || command ? "" : "disabled"} 
+            onclick="completeOutbound(
+                '${command ? command.commandId : 0}', 
+                '${command ? command.carrierId : ""}', 
+                '${eqpName}', 
+                this
+            )">払出完了</button> 
+        </div>`;
+
+        area.appendChild(div);
     });
 }
 
+async function completeOutbound(commandId, carrierId, eqpName, buttonElement) {
+    if (commandId === 0) {
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/shelf-system/unload', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                CommandId: commandId,
+                CarrierId: carrierId,
+                EqpName: eqpName
+            })
+        });
+        if (response.status === 200) {
+            console.log("払出完了報告に成功しました。");
+            if (buttonElement) {
+                buttonElement.disabled = true;
+                buttonElement.classList.remove("waiting");
+                buttonElement.classList.add("completed");
+
+                const row = buttonElement.closest(".outbound-item");
+                if (row) {
+                    const infoArea = row.querySelector(".outbound-info");
+
+                    if (infoArea) {
+                        infoArea.children[1].innerHTML = "CommandID<br>----";
+                        infoArea.children[2].innerHTML = "CarrierID<br>----";
+                    }
+                }
+            }
+        }
+        else if (response.status === 400) {
+            console.log("【Warn】400 JSONでPOSTするEqpNameが空白");
+        }
+        else if (response.status === 404) {
+            console.log("【Warn】404 EqpNameが存在しない");
+        }
+        else if (response.status === 500) {
+            console.log("【Erroe】サーバー内部エラーが発生しました。");
+        }
+    } catch (error) {
+        console.error("[Error] サーバ―へ払出完了報告失敗:", error);
+    }
+}
 
 //＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
 // 在庫一覧更新
