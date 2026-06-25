@@ -57,7 +57,7 @@ public class SqlRepository
 
                 _getResultInfomation = new()
                 {
-                    Status = [],
+                    States = [],
                     Commands = commands,
                     Shelves = shelves
                 };
@@ -270,12 +270,12 @@ public class SqlRepository
                       storage_at AS StorageAt
                       FROM shelves
                       WHERE shelf_location LIKE @Prefix; 
-                      --未完了の搬送指示のキャリアIDと棚を取得
+                      --未完了と正常完了の搬送指示のキャリアIDと棚を取得
                       SELECT 
                       carrier_id AS CarrierId,
                       location AS Location
                       FROM commands
-                      WHERE command_status IN (0,1);";
+                      WHERE command_status != 3;";
 
                 using var multi = await connection.QueryMultipleAsync(sql, new
                 {
