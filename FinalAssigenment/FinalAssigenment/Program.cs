@@ -57,9 +57,9 @@ public class Program
             app.UseHsts();
         }
 
-        app.UseCors("AllowFetch");
+        //app.UseCors("AllowFetch");
 
-        app.UseHttpsRedirection();
+        //app.UseHttpsRedirection();
 
         app.UseRouting();
 
