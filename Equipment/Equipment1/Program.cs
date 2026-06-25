@@ -1,17 +1,20 @@
 ﻿using NLog;
 using Equipment1.Models;
+using Equipment1.Controllers;
 using Equipment1.Services;
 
 namespace Equipment1;
 
 internal class Program
 {
-
+    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     static async Task Main(string[] args)
     {
 
         DeviceController controller = new DeviceController();
         DeviceHttpListener listener = new DeviceHttpListener(controller);
+
+        Logger.Info("========== 保管設備起動 ==========");
 
         //サーバーAPI受信処理
         Task listenerTask = listener.HttpListenerStartAsync();
