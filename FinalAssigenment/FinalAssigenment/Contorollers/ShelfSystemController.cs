@@ -30,14 +30,14 @@ public class ShelfSystemController : ControllerBase
     {
         try
         {
-            _logger.LogInformation($"[Info] 情報取得開始");
+            _logger.LogInformation("[Info] 情報取得開始");
             var systemInfo = await _repository.SelectInfomationAsync();
-            systemInfo.Status = _service.EqpStatusList;
+            systemInfo.States = _service.EqpStateList;
             return Ok(systemInfo);
         }
         catch (Exception ex)
         {
-            return StatusCode(500, $"情報取得失敗");
+            return StatusCode(500, "情報取得失敗");
         }
     }
     [HttpGet("request")]
@@ -47,18 +47,18 @@ public class ShelfSystemController : ControllerBase
         {
             DateTime sendAt = DateTime.Now;
             _endPointName = HttpContext.Request.Path.Value.Split('/').Last();
-            _service.UpdateEqpStatus(eqpName, _endPointName);
+            _service.UpdateEqpState(eqpName, _endPointName);
             var sendCommand = await _repository.SelectCommandRequestAsync(eqpName, sendAt);
             if (sendCommand != null)
             {
                 _service.TimeoutOccurred(sendCommand);
-                _logger.LogInformation($"[Info] 搬送指示送信 CommandID＝{sendCommand.CommandId},EqpName＝{sendCommand.EqpName}");
+                _logger.LogInformation("[Info] 搬送指示送信 CommandID＝{sendCommand.CommandId},EqpName＝{sendCommand.EqpName}");
             }
             return Ok(sendCommand);
         }
         catch (Exception ex)
         {
-            return StatusCode(500, $"[Error]搬送指示要求GET失敗");
+            return StatusCode(500, "[Error]搬送指示要求GET失敗");
         }
     }
     [HttpPost("command")]
@@ -80,7 +80,7 @@ public class ShelfSystemController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, $"[Error]搬送指示登録失敗");
+            return StatusCode(500, "[Error]搬送指示登録失敗");
         }
     }
     [HttpPost("unload")]
@@ -102,7 +102,7 @@ public class ShelfSystemController : ControllerBase
         catch (Exception ex)
         {
             
-            return StatusCode(500, $"[Error]サーバへ払出完了報告失敗");
+            return StatusCode(500, "[Error]サーバへ払出完了報告失敗");
         }
     }
     [HttpPost("online")]
@@ -112,13 +112,13 @@ public class ShelfSystemController : ControllerBase
         {
             _logger.LogInformation("[Info] 設備ONLINE報告開始");
             _endPointName = HttpContext.Request.Path.Value.Split('/').Last();
-            _service.UpdateEqpStatus(online.EqpName, _endPointName);
+            _service.UpdateEqpState(online.EqpName, _endPointName);
             _logger.LogInformation("[Info] 設備ONLINE報告報告完了");
             return Ok();
         }
         catch (Exception ex)
         {
-            return StatusCode(500, $"[Error] 設備ONLINE報告失敗");
+            return StatusCode(500, "[Error] 設備ONLINE報告失敗");
         }
     }
     [HttpPost("start")]
@@ -127,13 +127,13 @@ public class ShelfSystemController : ControllerBase
         try
         {
             _endPointName = HttpContext.Request.Path.Value.Split('/').Last();
-            _service.UpdateEqpStatus(start.EqpName, _endPointName);
+            _service.UpdateEqpState(start.EqpName, _endPointName);
             await _repository.UpdateCommandStatusAsync(start.CommandId, (int)start.CommandStatus);
             return Ok();
         }
         catch (Exception ex)
         {
-            return StatusCode(500, $"[Error] 搬送指示開始報告失敗");
+            return StatusCode(500, "[Error] 搬送指示開始報告失敗");
         }
     }
     [HttpPost("completion")]
@@ -144,7 +144,7 @@ public class ShelfSystemController : ControllerBase
         {
             DateTime completionAt = DateTime.Now;
             _endPointName = HttpContext.Request.Path.Value.Split('/').Last();
-            _service.UpdateEqpStatus(completion.EqpName, _endPointName);
+            _service.UpdateEqpState(completion.EqpName, _endPointName);
             await _repository.UpdateCompletionAsync(completion, completionAt);
             _service.CancelTimeoutTimer(completion.CommandId);
             if (completion.CommandType == 0)
@@ -168,7 +168,7 @@ public class ShelfSystemController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, $"[Error] 搬送指示完了報告失敗");
+            return StatusCode(500, "[Error] 搬送指示完了報告失敗");
         }
     }
     [HttpPost("incident")]
@@ -179,12 +179,12 @@ public class ShelfSystemController : ControllerBase
             _logger.LogInformation("[Info] 異常発生報告開始");
             if (string.IsNullOrWhiteSpace(incident.EqpName)) return BadRequest("eqpNameが未入力です。");
             _endPointName = HttpContext.Request.Path.Value.Split('/').Last();
-            _service.UpdateEqpStatus(incident.EqpName, _endPointName);
+            _service.UpdateEqpState(incident.EqpName, _endPointName);
             return Ok();
         }
         catch (Exception ex)
         {
-            return StatusCode(500, $"[Error]異常発生報告失敗");
+            return StatusCode(500, "[Error]異常発生報告失敗");
         }
     }
     [HttpPost("recovery")]
@@ -195,12 +195,12 @@ public class ShelfSystemController : ControllerBase
             _logger.LogInformation("[Info] 異常復旧報告開始");
             if (string.IsNullOrWhiteSpace(recovery.EqpName)) return BadRequest("eqpNameが未入力です。");
             _endPointName = HttpContext.Request.Path.Value.Split('/').Last();
-            _service.UpdateEqpStatus(recovery.EqpName, _endPointName);
+            _service.UpdateEqpState(recovery.EqpName, _endPointName);
             return Ok();
         }
         catch (Exception ex)
         {
-            return StatusCode(500, $"[Error]異常復旧報告失敗");
+            return StatusCode(500, "[Error]異常復旧報告失敗");
         }
     }
 

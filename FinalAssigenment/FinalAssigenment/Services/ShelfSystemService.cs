@@ -37,7 +37,7 @@ public class ShelfSystemService
             "http://localhost:8091",
             "http://localhost:8092"
         ];
-    public List<EquipmentState> EqpStatusList => _eqpStateList;
+    public List<EquipmentState> EqpStateList => _eqpStateList;
     private readonly ConcurrentDictionary<string, CancellationTokenSource> _timeoutCancell = new();
 
     public async Task GetAllEqpStateAsync()
