@@ -33,9 +33,9 @@ public class ShelfSystemService
         ];
 
     private readonly List<string> _eqpBaseUrls = [
-            "http://localhost:8090",
-            "http://localhost:8091",
-            "http://localhost:8092"
+            "http://172.16.7.44:8090",
+            "http://172.16.7.44:8091",
+            "http://172.16.7.44:8092"
         ];
     public List<EquipmentState> EqpStateList => _eqpStateList;
     private readonly ConcurrentDictionary<string, CancellationTokenSource> _timeoutCancell = new();
@@ -71,7 +71,7 @@ public class ShelfSystemService
         }
         catch (Exception ex)
         {
-            _logger.LogError("【[Error] 設備状態取得失敗");
+            _logger.LogError("[Error] 設備状態取得失敗");
         }
 
     }
@@ -303,8 +303,12 @@ public class ShelfSystemService
                     expiredCts.Dispose();
                 }
             }
-            _logger.LogInformation($"{eqpName}がOFF-LINEです。");
-            UpdateEqpState(eqpName, "");
+            var targetEqp = _eqpStateList.First(e => e.EqpName == eqpName);
+            if(targetEqp.EquipmentStatus == 0)
+            {
+                _logger.LogInformation($"{eqpName}がOFF-LINEです。");
+                UpdateEqpState(targetEqp.EqpName, "");
+            }
         });
     }
 }

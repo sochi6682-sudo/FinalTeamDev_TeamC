@@ -433,7 +433,6 @@ async function completeOutbound(commandId, carrierId, eqpName, buttonElement) {
     if (commandId === 0) {
         return;
     }
-
     try {
         const response = await fetch('/api/shelf-system/unload', {
             method: 'POST',
@@ -465,16 +464,16 @@ async function completeOutbound(commandId, carrierId, eqpName, buttonElement) {
             }
         }
         else if (response.status === 400) {
-            console.log("【Warn】400 JSONでPOSTするEqpNameが空白");
+            alert("【Warn】400 JSONでPOSTするEqpNameが空白");
         }
         else if (response.status === 404) {
-            console.log("【Warn】404 EqpNameが存在しない");
+            alert("【Warn】404 EqpNameが存在しない");
         }
         else if (response.status === 500) {
-            console.log("【Erroe】サーバー内部エラーが発生しました。");
+            alert("【Erroe】サーバー内部エラーが発生しました。");
         }
     } catch (error) {
-        console.error("[Error] サーバ―へ払出完了報告失敗:", error);
+        alert("[Error] サーバ―へ払出完了報告失敗:", error);
     }
 }
 
