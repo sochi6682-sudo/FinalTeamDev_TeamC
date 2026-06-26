@@ -182,15 +182,33 @@ async function sendInboundCommand() {
                 carrierId: carrierId
             })
         });
-
+    const serverMessage = await getServerMessage(response);
     if (response.ok) {
         showResult("入庫指示を送信しました");
     }
     else {
-        showResult("入庫指示に失敗しました");
+        showResult(serverMessage || "入庫指示に失敗しました");
     }
 }
+async function getServerMessage(response) {
+    const text = await response.text();
 
+    if (!text) {
+        return "";
+    }
+
+    try {
+        const json = JSON.parse(text);
+
+        return json.message
+            ?? json.error
+            ?? json.title
+            ?? text;
+    }
+    catch {
+        return text;
+    }
+}
 //＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
 // 出庫指示
 //＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
@@ -221,12 +239,12 @@ async function sendOutboundCommand() {
                 carrierId: carrierId
             })
         });
-
+    const serverMessage = await getServerMessage(response);
     if (response.ok) {
         showResult("出庫指示を送信しました");
     }
     else {
-        showResult("出庫指示に失敗しました");
+        showResult(serverMessage || "出庫指示に失敗しました");
     }
 }
 

@@ -39,7 +39,7 @@ public class ShelfSystemController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, "情報取得失敗");
+            return StatusCode(500, "[Error] 情報取得失敗");
         }
     }
     [HttpGet("request")]

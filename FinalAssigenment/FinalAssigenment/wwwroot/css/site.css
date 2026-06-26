@@ -49,7 +49,7 @@ body {
     padding: 14px;
     text-align: center;
     text-decoration: none;
-    color: white;
+    color: black;
     background: #6c757d;
     border-radius: 10px;
     font-weight: bold;
@@ -215,6 +215,15 @@ body {
 /* CommandList */
 /*============================================================================*/
 
+.table-responsive {
+    max-height: 420px;
+    overflow-y: auto;
+    overflow-x: auto;
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #ddd;
+}
+
 .command-table {
     width: 100%;
     border-collapse: collapse;
@@ -226,6 +235,9 @@ body {
         color: white;
         padding: 10px;
         text-align: center;
+        position: sticky;
+        top: 0;
+        z-index: 1;
     }
 
     .command-table td {
