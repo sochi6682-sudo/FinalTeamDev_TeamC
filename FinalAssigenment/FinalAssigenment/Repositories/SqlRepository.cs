@@ -42,7 +42,7 @@ public class SqlRepository
                       UNION ALL
                       SELECT 
                       TOP(100) * FROM commands
-                      WHERE command_status IN (2,3);
+                      WHERE command_status IN (2,3,4);
                       -- 棚の情報を全件取得
                       SELECT 
                       shelf_location AS ShelfLocation,
@@ -278,7 +278,7 @@ public class SqlRepository
                         WHEN command_status = 2 THEN NULL
                       END AS Location
                       FROM commands
-                      WHERE command_status != 3;";
+                      WHERE command_status != 3 AND command_type = 1;";
 
                 using var multi = await connection.QueryMultipleAsync(sql, new
                 {

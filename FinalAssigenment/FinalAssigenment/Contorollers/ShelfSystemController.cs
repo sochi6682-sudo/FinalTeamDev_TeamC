@@ -165,7 +165,7 @@ public class ShelfSystemController : ControllerBase
         }
     }
     [HttpPost("incident")]
-    public IActionResult PostIncident([FromBody] EquipmentName incident)
+    public IActionResult PostIncident([FromBody] IncidentEquipment incident)
     {
         try
         {
@@ -181,7 +181,7 @@ public class ShelfSystemController : ControllerBase
         }
     }
     [HttpPost("recovery")]
-    public IActionResult PostRecovery([FromBody] EquipmentName recovery)
+    public IActionResult PostRecovery([FromBody] IncidentEquipment recovery)
     {
         try
         {
