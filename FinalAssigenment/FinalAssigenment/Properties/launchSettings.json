@@ -5,7 +5,7 @@
       "commandName": "Project",
       "dotnetRunMessages": true,
       "launchBrowser": true,
-      //"launchUrl": "scalar",
+      "launchUrl": "scalar",
       "applicationUrl": "http://+:5248",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
@@ -14,7 +14,7 @@
     "https": {
       "commandName": "Project",
       "dotnetRunMessages": true,
-      //"launchBrowser": true,
+      "launchBrowser": true,
       //デバックでindex.cshtml開くなら"lanchUrl"をコメントアウト
       "launchUrl": "scalar",
       "applicationUrl": "https://+:7211;http://+:5248",

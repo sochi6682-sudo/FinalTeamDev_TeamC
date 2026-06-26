@@ -34,6 +34,7 @@ public class ShelfSystemController : ControllerBase
             _logger.LogInformation("[Info] 情報取得開始");
             var systemInfo = await _repository.SelectInfomationAsync();
             systemInfo.States = _service.EqpStateList;
+            _logger.LogInformation("[Info] 情報取得成功");
             return Ok(systemInfo);
         }
         catch (Exception ex)
@@ -46,6 +47,7 @@ public class ShelfSystemController : ControllerBase
     {
         try
         {
+            _service.RefreshOnlineTimer(eqpName);
             DateTime sendAt = DateTime.Now;
             _endPointName = HttpContext.Request.Path.Value.Split('/').Last();
             _service.UpdateEqpState(eqpName, _endPointName);
@@ -97,7 +99,7 @@ public class ShelfSystemController : ControllerBase
             {
                 return NotFound();
             }
-            _logger.LogInformation("[Info] 設備へ払出完了報告成功");
+            await _service.PostHttpClientAsync(unload);
             return Ok();
         }
 

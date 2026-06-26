@@ -39,6 +39,7 @@ public class ShelfSystemService
         ];
     public List<EquipmentState> EqpStateList => _eqpStateList;
     private readonly ConcurrentDictionary<string, CancellationTokenSource> _timeoutCancell = new();
+    private readonly ConcurrentDictionary<string, CancellationTokenSource> _onlineWatchCancell = new();
 
     public async Task GetAllEqpStateAsync()
     {
@@ -79,14 +80,6 @@ public class ShelfSystemService
         if (!Regex.IsMatch(newCommand.CarrierId, @"^CAR[0-9]{6}$"))
         {
             throw new HttpRequestException("キャリアID の命名規則が不正です。", null, System.Net.HttpStatusCode.BadRequest);
-        }
-        foreach(var e in _eqpStateList)
-        {
-            Console.WriteLine($"{e.EqpName}:{newCommand.EqpName}");
-            if(e.EqpName != newCommand.EqpName)
-            {
-                Console.WriteLine("一致してない");
-            }
         }
         
         var targetEqp = _eqpStateList.FirstOrDefault(e => e.EqpName == newCommand.EqpName);
@@ -218,6 +211,11 @@ public class ShelfSystemService
         try
         {
             var response = await _httpClient.PostAsJsonAsync($"{url}/api/shelf-system/unload", sendCommand);
+            if (response.IsSuccessStatusCode)
+            {
+                // コンソールやファイルにログを出力する
+                _logger.LogInformation("[Info] 設備へ払出完了報告成功");
+            }
         }
         catch(Exception ex)
         {
@@ -256,6 +254,7 @@ public class ShelfSystemService
                     expiredCts.Dispose(); 
                 }
             }
+            _logger.LogInformation("タイムアウト検知しました。");
             UpdateEqpState(sendCommand.EqpName, "");
         });
     }
@@ -268,5 +267,44 @@ public class ShelfSystemService
             cts.Cancel();  
             cts.Dispose(); 
         }
+    }
+
+    public void RefreshOnlineTimer(string eqpName)
+    {
+        if (_onlineWatchCancell.TryRemove(eqpName, out var oldCts))
+        {
+            oldCts.Cancel();
+            oldCts.Dispose();
+        }
+        var cts = new CancellationTokenSource();
+        bool added = _onlineWatchCancell.TryAdd(eqpName, cts);
+
+        Task.Run(async () =>
+        {
+            try
+            {
+                //10秒タイマー開始
+                await Task.Delay(10000, cts.Token);
+                
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+            catch (Exception)
+            {
+                return;
+            }
+            finally
+            {
+                // ディクショナリから完全に削除してリソース解放
+                if (_onlineWatchCancell.TryRemove(eqpName, out var expiredCts))
+                {
+                    expiredCts.Dispose();
+                }
+            }
+            _logger.LogInformation($"{eqpName}がOFF-LINEです。");
+            UpdateEqpState(eqpName, "");
+        });
     }
 }
