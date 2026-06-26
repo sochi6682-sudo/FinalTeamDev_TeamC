@@ -33,9 +33,9 @@ public class ShelfSystemService
         ];
 
     private readonly List<string> _eqpBaseUrls = [
-            "http://localhost:8090",
-            "http://localhost:8091",
-            "http://localhost:8092"
+            "http://172.16.7.44:8090",
+            "http://172.16.7.44:8091",
+            "http://172.16.7.44:8092"
         ];
     public List<EquipmentState> EqpStateList => _eqpStateList;
     private readonly ConcurrentDictionary<string, CancellationTokenSource> _timeoutCancell = new();
@@ -71,7 +71,7 @@ public class ShelfSystemService
         }
         catch (Exception ex)
         {
-            _logger.LogError("【[Error] 設備状態取得失敗");
+            _logger.LogError("[Error] 設備状態取得失敗");
         }
 
     }
@@ -112,7 +112,7 @@ public class ShelfSystemService
                               .FirstOrDefault(s => !incompleteCommandList.Any(c => c.Location == s.ShelfLocation));
             if (selectedInShelf == null)
             {
-                throw new HttpRequestException("棚が満帆のため入庫できません。", null, HttpStatusCode.BadRequest);
+                throw new HttpRequestException("棚が満杯のため入庫できません。", null, HttpStatusCode.BadRequest);
             }
             availableLocation = selectedInShelf.ShelfLocation;
         }
@@ -156,10 +156,19 @@ public class ShelfSystemService
         lock (_lockObject)
         {
             var targetEqp = _eqpStateList.First(e => e.EqpName == eqpName);
-            if (endPoint == "online" || endPoint == "request")
+            if (endPoint == "online")
             {
                 targetEqp.ControlState = 1;
-                _logger.LogInformation("[Info] ControlState : ON-LINE"); 
+                _logger.LogInformation("[Info] ControlState : ON-LINE");
+                targetEqp.EquipmentStatus = 0;
+                _logger.LogInformation("[Info] EquipmentStatus : IDLE");
+                targetEqp.AlarmStatus = 0;
+                _logger.LogInformation("[Info] AlarmStatus : NO ALARM");
+            }
+            if(endPoint == "request")
+            {
+                targetEqp.ControlState = 1;
+                _logger.LogInformation("[Info] ControlState : ON-LINE");
             }
             else if (endPoint == "start")
             {
@@ -303,8 +312,12 @@ public class ShelfSystemService
                     expiredCts.Dispose();
                 }
             }
-            _logger.LogInformation($"{eqpName}がOFF-LINEです。");
-            UpdateEqpState(eqpName, "");
+            var targetEqp = _eqpStateList.First(e => e.EqpName == eqpName);
+            if(targetEqp.EquipmentStatus == 0)
+            {
+                _logger.LogInformation($"{eqpName}がOFF-LINEです。");
+                UpdateEqpState(targetEqp.EqpName, "");
+            }
         });
     }
 }

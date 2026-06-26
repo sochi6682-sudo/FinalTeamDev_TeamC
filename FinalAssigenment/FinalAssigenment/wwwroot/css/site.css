@@ -17,8 +17,22 @@ html {
   min-height: 100%;
 }
 
+header {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: #1f6feb;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
 body {
   margin-bottom: 60px;
+}
+
+.navbar {
+    position: sticky;
+    top: 0;
+    z-index: 1001;
 }
 
 .form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
@@ -49,7 +63,7 @@ body {
     padding: 14px;
     text-align: center;
     text-decoration: none;
-    color: white;
+    color: black;
     background: #6c757d;
     border-radius: 10px;
     font-weight: bold;
@@ -215,6 +229,15 @@ body {
 /* CommandList */
 /*============================================================================*/
 
+.table-responsive {
+    max-height: 420px;
+    overflow-y: auto;
+    overflow-x: auto;
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #ddd;
+}
+
 .command-table {
     width: 100%;
     border-collapse: collapse;
@@ -226,6 +249,9 @@ body {
         color: white;
         padding: 10px;
         text-align: center;
+        position: sticky;
+        top: 0;
+        z-index: 1;
     }
 
     .command-table td {

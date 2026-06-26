@@ -182,15 +182,33 @@ async function sendInboundCommand() {
                 carrierId: carrierId
             })
         });
-
+    const serverMessage = await getServerMessage(response);
     if (response.ok) {
         showResult("入庫指示を送信しました");
     }
     else {
-        showResult("入庫指示に失敗しました");
+        showResult(serverMessage || "入庫指示に失敗しました");
     }
 }
+async function getServerMessage(response) {
+    const text = await response.text();
 
+    if (!text) {
+        return "";
+    }
+
+    try {
+        const json = JSON.parse(text);
+
+        return json.message
+            ?? json.error
+            ?? json.title
+            ?? text;
+    }
+    catch {
+        return text;
+    }
+}
 //＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
 // 出庫指示
 //＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
@@ -221,12 +239,12 @@ async function sendOutboundCommand() {
                 carrierId: carrierId
             })
         });
-
+    const serverMessage = await getServerMessage(response);
     if (response.ok) {
         showResult("出庫指示を送信しました");
     }
     else {
-        showResult("出庫指示に失敗しました");
+        showResult(serverMessage || "出庫指示に失敗しました");
     }
 }
 
@@ -433,7 +451,6 @@ async function completeOutbound(commandId, carrierId, eqpName, buttonElement) {
     if (commandId === 0) {
         return;
     }
-
     try {
         const response = await fetch('/api/shelf-system/unload', {
             method: 'POST',
@@ -465,16 +482,16 @@ async function completeOutbound(commandId, carrierId, eqpName, buttonElement) {
             }
         }
         else if (response.status === 400) {
-            console.log("【Warn】400 JSONでPOSTするEqpNameが空白");
+            alert("【Warn】400 JSONでPOSTするEqpNameが空白");
         }
         else if (response.status === 404) {
-            console.log("【Warn】404 EqpNameが存在しない");
+            alert("【Warn】404 EqpNameが存在しない");
         }
         else if (response.status === 500) {
-            console.log("【Erroe】サーバー内部エラーが発生しました。");
+            alert("【Erroe】サーバー内部エラーが発生しました。");
         }
     } catch (error) {
-        console.error("[Error] サーバ―へ払出完了報告失敗:", error);
+        alert("[Error] サーバ―へ払出完了報告失敗:", error);
     }
 }
 
