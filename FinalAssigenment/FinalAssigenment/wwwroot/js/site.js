@@ -2,7 +2,6 @@
 let latestShelves = [];
 let latestCommands = [];
 let latestEquipments = [];
-const eqpList = ["EQP01", "EQP02", "EQP03"];
 
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -78,9 +77,6 @@ async function fetchStatus() {
 
         const data = await res.json();
 
-        console.log(data);
-        console.log(data.states);
-
         latestShelves = data.shelves ?? [];
         latestCommands = data.commands ?? [];
         latestEquipments = data.states ?? [];
@@ -128,19 +124,9 @@ function initCommandSendPage() {
 
     updateShelfSelect();
 
-    //setInterval(updateCommandSend, 5000);
 }
 
-//＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
-// 画面更新
-//＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
 
-//function updateCommandSend() {
-
-//    updateShelfSelect();
-
-//    updateCommandEquipStatus();
-//}
 
 //＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
 // キャリアID更新
@@ -154,7 +140,7 @@ function updateShelfSelect() {
 
     select.innerHTML =
         '<option value="">選択してください</option>';
-
+    const eqpList = ["EQP01", "EQP02", "EQP03"];
     eqpList.forEach(eqpName => {
         const option = document.createElement("option");
 
@@ -371,7 +357,8 @@ function updateCommandList() {
 
         if (commandFilter === "history")
             return command.commandStatus === 2 ||
-                command.commandStatus === 3;
+                command.commandStatus === 3 || 
+                command.commandStatus === 4;
 
         return true;
     });
@@ -414,10 +401,11 @@ function updateCommandList() {
 }
 
 function getCommandStatusText(status) {
-    if (status === 0) return "QUEUED";
-    if (status === 1) return "ACTIVE";
-    if (status === 2) return "COMPLETE";
-    if (status === 3) return "FAILED";
+    if (status === 0) return "実行待ち";
+    if (status === 1) return "実行中";
+    if (status === 2) return "正常完了";
+    if (status === 3) return "異常完了";
+    if (status === 4) return "払出完了";
     return "UNKNOWN";
 }
 
@@ -426,114 +414,12 @@ function getCommandStatusClass(status) {
     if (status === 1) return "status-active";
     if (status === 2) return "status-complete";
     if (status === 3) return "status-failed";
+    if (status === 4) return "status-complete";
     return "";
 }
 
 
-// ===============================
-// 出庫完了報告
-// ===============================
-//function initOutboundReportPage() {
 
-//    const page =
-//        document.getElementById(
-//            "page-outbound-report"
-//        );
-
-//    if (!page) return;
-
-//    updateOutboundReport();
-//}
-
-//document.addEventListener(
-//    "DOMContentLoaded",
-//    initOutboundReportPage
-//);
-
-// ===============================
-// 出庫完了報告更新
-// ===============================
-//function updateOutboundReport() {
-
-//    const area =
-//        document.getElementById(
-//            "outbound-report-list"
-//        );
-
-//    if (!area) return;
-
-//    area.innerHTML = "";
-
-//    latestShelves.forEach(shelf => {
-
-//        const command =
-//            latestCommands.find(x =>
-//                x.location === shelf.shelfLocation &&
-//                x.commandType === 1
-//            );
-
-//        const completed =
-//            command &&
-//            command.commandStatus === 2;
-
-//        const div =
-//            document.createElement("div");
-
-//        div.className = "outbound-item";
-
-//        div.innerHTML = `
-//            <div class="outbound-info">
-
-//                <div class="outbound-shelf">
-//                    保管設備${shelf.shelfLocation}
-//                </div>
-
-//                <div class="outbound-data">
-//                    CommandID<br>
-//                    ${command ? command.commandId : "----"}
-//                </div>
-
-//                <div class="outbound-data">
-//                    CarrierID<br>
-//                    ${command ? command.carrierId : "----"}
-//                </div>
-
-//            </div>
-
-//            <div class="outbound-action">
-
-//                <div class="
-//                    status-lamp
-//                    ${completed ? "on" : "off"}">
-//                </div>
-
-//                <button
-//                    class="
-//                        complete-button
-//                        ${completed
-//                ? "completed"
-//                : "waiting"}"
-//                    ${completed
-//                ? "disabled"
-//                : ""}
-
-//                    onclick="
-//                        completeOutbound(
-//                            ${command
-//                ? command.commandId
-//                : 0}
-//                        )">
-
-//                    √ 払出完了
-
-//                </button>
-
-//            </div>
-//        `;
-
-//        area.appendChild(div);
-//    });
-//}
 
 // ===============================
 // 出庫完了報告
@@ -548,17 +434,14 @@ function updateOutboundReport() {
     const area = document.getElementById("outbound-report-list");
     if (!area) return;
     area.innerHTML = "";
-    eqpList.forEach(eqpName => {
+    const eqpNames = ["EQP01", "EQP02", "EQP03"];
+    eqpNames.forEach(eqpName => {
         const shelf = latestShelves.find(s => {
             const locStr = String(s.shelfLocation || "");
             if (eqpName === "EQP01") return locStr.startsWith("1");
             if (eqpName === "EQP02") return locStr.startsWith("2");
             if (eqpName === "EQP03") return locStr.startsWith("3");
         });
-
-    const eqpNames = ["EQP01", "EQP02", "EQP03"];
-
-    eqpNames.forEach(eqpName => {
 
         const command = latestCommands.find(x =>
             x.eqpName === eqpName &&
@@ -578,12 +461,12 @@ function updateOutboundReport() {
                 </div>
 
                 <div class="outbound-data">
-                    CommandID<br>
+                    搬送指示ID<br>
                     ${command ? command.commandId : "----"}
                 </div>
 
                 <div class="outbound-data">
-                    CarrierID<br>
+                    キャリアID<br>
                     ${command ? command.carrierId : "----"}
                 </div>
 
@@ -597,7 +480,9 @@ function updateOutboundReport() {
                 <button
                     class="complete-button ${completed ? "completed" : "waiting"}"
                     ${completed ? "" : "disabled"}
-                    onclick="completeOutbound('${command ? command.commandId : ""}')">
+                    onclick="completeOutbound('${command ? command.commandId : ""}',
+                    '${command ? command.carrierId : ""}', 
+                    '${eqpName}')">
                     √ 払出完了
                 </button>
 
@@ -607,7 +492,54 @@ function updateOutboundReport() {
         area.appendChild(div);
     });
 }
+async function completeOutbound(commandId, carrierId, eqpName, buttonElement) {
+    if (commandId === 0) {
+        return;
+    }
 
+    try {
+        const response = await fetch('/api/shelf-system/unload', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                CommandId: commandId,
+                CarrierId: carrierId,
+                EqpName: eqpName
+            })
+        });
+        if (response.status === 200) {
+            console.log("払出完了報告に成功しました。");
+            if (buttonElement) {
+                buttonElement.disabled = true;
+                buttonElement.classList.remove("waiting");
+                buttonElement.classList.add("completed");
+
+                const row = buttonElement.closest(".outbound-item");
+                if (row) {
+                    const infoArea = row.querySelector(".outbound-info");
+
+                    if (infoArea) {
+                        infoArea.children[1].innerHTML = "CommandID<br>----";
+                        infoArea.children[2].innerHTML = "CarrierID<br>----";
+                    }
+                }
+            }
+        }
+        else if (response.status === 400) {
+            console.log("【Warn】400 JSONでPOSTするEqpNameが空白");
+        }
+        else if (response.status === 404) {
+            console.log("【Warn】404 EqpNameが存在しない");
+        }
+        else if (response.status === 500) {
+            console.log("【Erroe】サーバー内部エラーが発生しました。");
+        }
+    } catch (error) {
+        console.error("[Error] サーバ―へ払出完了報告失敗:", error);
+    }
+}
 
 //＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
 // 在庫一覧更新
@@ -696,7 +628,7 @@ function updateInventoryList() {
                 </div>
 
                 <div class="shelf-row">
-                    <span>CarrierID</span>
+                    <span>キャリアID</span>
                     <strong>${hasStock ? carrierId : "-"}</strong>
                 </div>
 
