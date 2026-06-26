@@ -50,7 +50,6 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
 
     updateShelfSelect();
-    updateCommandEquipStatus();
 
     // API接続する場合
     startPolling();
@@ -231,69 +230,7 @@ async function sendOutboundCommand() {
     }
 }
 
-//＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
-// 設備状態更新
-//＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
 
-function updateCommandEquipStatus() {
-
-    const area = document.getElementById("command-equip-status");
-    if (!area) return;
-
-    //area.innerHTML = "";
-
-    const eqpNames = ["EQP01", "EQP02", "EQP03"];
-
-    eqpNames.forEach(eqpName => {
-
-        const equipment = latestEquipments.find(x =>
-            x.eqpName === eqpName
-        );
-
-        const shelves = latestShelves.filter(shelf => {
-            const location = String(shelf.shelfLocation ?? shelf.location ?? "");
-            return location.startsWith(eqpName.substring(3, 5).replace("0", ""));
-        });
-
-        const hasInboundCommand =
-            latestCommands.some(command =>
-                command.eqpName === eqpName &&
-                command.commandType === 1 &&
-                (command.commandStatus === 0 ||
-                    command.commandStatus === 1));
-
-        const inboundOK =
-            equipment &&
-            equipment.controlState === 1 &&
-            !hasInboundCommand;
-
-        const outboundOK =
-            equipment &&
-            equipment.controlState === 1 &&
-            shelves.some(shelf =>
-                shelf.storedCarrierId || shelf.carrierId
-            );
-
-        const div = document.createElement("div");
-        div.className = "command-equip-row";
-
-        div.innerHTML = `
-            <div class="command-equip-name">
-                ${eqpName}
-            </div>
-
-            <div class="command-status-box ${inboundOK ? "available" : "unavailable"}">
-                入庫可能
-            </div>
-
-            <div class="command-status-box ${outboundOK ? "available" : "unavailable"}">
-                出庫可能
-            </div>
-        `;
-
-        area.appendChild(div);
-    });
-}
 
 //＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
 // 結果表示
