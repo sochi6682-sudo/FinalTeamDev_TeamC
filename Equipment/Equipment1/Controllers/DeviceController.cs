@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Net.Http.Json;
 using System.Text;
+using System.Text.Json;
 
 namespace Equipment1.Controllers;
 
@@ -55,11 +56,11 @@ public class DeviceController
         //通信状態変換
         if (_state.CommunicationStatus == CommunicationStatus.Online)
         {
-            report.ControlStates = ControlStates.Online;
+            report.ControlState = ControlState.Online;
         }
         else
         {
-            report.ControlStates = ControlStates.Offline;
+            report.ControlState = ControlState.Offline;
         }
 
         //設備状態変換
@@ -97,9 +98,8 @@ public class DeviceController
         _stateController.InitStatus();
 
         //ON-LINE報告POST送信
-        StateReport report = CreateStateReport();　
+        StateReport report = CreateStateReport();
         await _apiClient.ReportOnlineAsync(report);
-
     }
 
 
@@ -206,7 +206,11 @@ public class DeviceController
         }
         else
         {
-            _consoleView.ShowInfo("出庫口が空くまで待機中");
+            if (_state.RetrieveAvailability != RetrieveAvailability.Available)
+            {
+                _consoleView.ShowInfo("出庫口が空くまで待機中");
+            }
+            
             //出庫：出庫可能状態まで待ち、正常/異常完了選択処理へ
             while (_state.RetrieveAvailability != RetrieveAvailability.Available)
             {
