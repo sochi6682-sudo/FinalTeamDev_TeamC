@@ -5,12 +5,14 @@
 }
 
 <div class="page-container">
-
+    <div id="serverStopOverlay" class="card-img-overlay hidden">
+        <div class="overlay-text">サーバー停止中</div>
+    </div>
     <h1>搬送指示一覧</h1>
 
     <div class="filter-tabs">
         <button class="filter-tab active" data-command-filter="all">全件</button>
-        <button class="filter-tab" data-command-filter="queued">待機</button>
+        <button class="filter-tab" data-command-filter="queued">実行待ち</button>
         <button class="filter-tab" data-command-filter="active">実行中</button>
         <button class="filter-tab" data-command-filter="history">履歴</button>
     </div>
@@ -20,7 +22,7 @@
             <thead>
                 <tr>
                     <th>ID</th>
-                    <th>Carrier</th>
+                    <th>キャリア</th>
                     <th>棚</th>
                     <th>種別</th>
                     <th>状態</th>

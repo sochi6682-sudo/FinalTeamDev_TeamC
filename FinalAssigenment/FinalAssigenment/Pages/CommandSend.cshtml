@@ -5,7 +5,9 @@
 }
 
 <div id="page-command-send" class="page-container">
-
+    <div id="serverStopOverlay" class="card-img-overlay hidden">
+        <div class="overlay-text">サーバー停止中</div>
+    </div>
     <h1>搬送指示送信</h1>
 
     <div class="input-row">
@@ -17,7 +19,7 @@
     </div>
 
     <div class="input-row">
-        <label>保管棚ID：</label>
+        <label>保管設備：</label>
         <select id="shelfIdSelect" class="input-field">
             <option value="">選択してください</option>
         </select>
@@ -39,9 +41,7 @@
         </button>
     </div>
 
-    <h2 class="equipment-title">
-        設備状態
-    </h2>
+   
 
     <div id="command-equip-status"></div>
 
