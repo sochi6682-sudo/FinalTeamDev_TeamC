@@ -55,11 +55,11 @@ public class DeviceController
         //通信状態変換
         if (_state.CommunicationStatus == CommunicationStatus.Online)
         {
-            report.ControlStates = ControlStates.Online;
+            report.ControlState = ControlState.Online;
         }
         else
         {
-            report.ControlStates = ControlStates.Offline;
+            report.ControlState = ControlState.Offline;
         }
 
         //設備状態変換
@@ -206,9 +206,12 @@ public class DeviceController
         }
         else
         {
-            _consoleView.ShowInfo("出庫口が空くまで待機中");
-            //出庫：出庫可能状態まで待ち、正常/異常完了選択処理へ
-            while (_state.RetrieveAvailability != RetrieveAvailability.Available)
+			if (_state.RetrieveAvailability != RetrieveAvailability.Available)
+			{
+				_consoleView.ShowInfo("出庫口が空くまで待機中");
+			}
+			//出庫：出庫可能状態まで待ち、正常/異常完了選択処理へ
+			while (_state.RetrieveAvailability != RetrieveAvailability.Available)
             {
                 await Task.Delay(100);
             }

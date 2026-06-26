@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Equipment3.Models;
 
-public enum ControlStates 
+public enum ControlState 
 { 
     Offline = 0, 
     Online = 1 
@@ -24,7 +24,7 @@ public enum AlarmStatus
 public class StateReport
 {
     public string EqpName { get; set; } = "EQP03";
-    public ControlStates ControlStates { get; set; } = ControlStates.Offline;
+    public ControlState ControlState { get; set; } = ControlState.Offline;
     public EquipmentStatus EquipmentStatus { get; set; } = EquipmentStatus.Idle;
     public AlarmStatus AlarmStatus { get; set; } = AlarmStatus.NoAlarm;
 

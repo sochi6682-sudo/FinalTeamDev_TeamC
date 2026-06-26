@@ -78,10 +78,11 @@ public class DeviceHttpListener
                 return;
             }
 
-            //４）404返送
+            //４）405返送
             Logger.Warn($"未定義API受信 Method={method} Path={path}");
-            await WriteResponseAsync(context, 404, "Not Found");
+            await WriteResponseAsync(context, 405, "Method Not Allowed");
 
+            
         }
         catch (Exception ex)
         {
