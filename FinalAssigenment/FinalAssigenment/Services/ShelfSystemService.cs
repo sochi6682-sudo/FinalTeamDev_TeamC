@@ -33,9 +33,9 @@ public class ShelfSystemService
         ];
 
     private readonly List<string> _eqpBaseUrls = [
-            "http://172.16.7.44:8090",
-            "http://172.16.7.44:8091",
-            "http://172.16.7.44:8092"
+            "http://localhost:8090",
+            "http://localhost:8091",
+            "http://localhost:8092"
         ];
     public List<EquipmentState> EqpStateList => _eqpStateList;
     private readonly ConcurrentDictionary<string, CancellationTokenSource> _timeoutCancell = new();
