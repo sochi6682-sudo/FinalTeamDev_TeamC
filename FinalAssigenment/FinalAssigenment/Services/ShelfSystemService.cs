@@ -95,13 +95,13 @@ public class ShelfSystemService
 
         string availableLocation = "";
         string prefix = "";
-        if (newCommand.EqpName == "EQP01") prefix = "1%"; 
-        else if (newCommand.EqpName == "EQP02") prefix = "2%"; 
-        else if (newCommand.EqpName == "EQP03") prefix = "3%";
-        //shelfList: 該当の保管設備の棚の情報をリスト化したもの
+        if (newCommand.EqpName == "EQP01") prefix = "1"; 
+        else if (newCommand.EqpName == "EQP02") prefix = "2"; 
+        else if (newCommand.EqpName == "EQP03") prefix = "3";
+        //shelfList: 全ての保管設備の棚の情報をリスト化したもの
         //例: 設備ID(EQP03)の棚(30101～30203)の情報
         //incompleteCommandList: 未完了の入庫の搬送指示の情報(搬送指示状態がQUEUED or ACTIVE)
-        var (shelfList, incompleteCommandList) = await _repository.SelectShelfInformationAsync(prefix);
+        var (shelfList, incompleteCommandList) = await _repository.SelectShelfInformationAsync();
 
         if (newCommand.CommandType == 1)
         {
@@ -115,7 +115,7 @@ public class ShelfSystemService
             }
             //該当の保管設備の棚からキャリアIDがない棚を抽出
             //未完了の入庫の搬送指示から、該当の保管設備の棚に割り当てられている搬送指示がないかを確認
-            var selectedInShelf = shelfList.Where(s => s.StoredCarrierId == null)
+            var selectedInShelf = shelfList.Where(s => s.ShelfLocation.StartsWith(prefix) && s.StoredCarrierId == null)
                               .FirstOrDefault(s => !incompleteCommandList.Any(c => c.Location == s.ShelfLocation));
             if (selectedInShelf == null)
             {
@@ -126,13 +126,13 @@ public class ShelfSystemService
         else if(newCommand.CommandType == 0)
         {
             //該当の保管設備の棚からキャリアIDがある棚が存在するか確認
-            bool isAllEmpty = shelfList.Any(s => s.StoredCarrierId != null);
+            bool isAllEmpty = shelfList.Any(s => s.ShelfLocation.StartsWith(prefix) && s.StoredCarrierId != null);
             if (!isAllEmpty)
             {
                 throw new HttpRequestException("棚が空のため出庫できません。", null, HttpStatusCode.BadRequest);
             }
             //該当の保管設備の棚から入力したキャリアIDがある棚を抽出
-            var matchedShelf = shelfList.FirstOrDefault(s => s.StoredCarrierId == newCommand.CarrierId);
+            var matchedShelf = shelfList.FirstOrDefault(s => s.ShelfLocation.StartsWith(prefix) && s.StoredCarrierId == newCommand.CarrierId);
             if (matchedShelf == null)
             {
                 throw new HttpRequestException("指定されたキャリアIDは棚に存在しません。", null, HttpStatusCode.NotFound);
