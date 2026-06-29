@@ -98,16 +98,23 @@ public class ShelfSystemService
         if (newCommand.EqpName == "EQP01") prefix = "1%"; 
         else if (newCommand.EqpName == "EQP02") prefix = "2%"; 
         else if (newCommand.EqpName == "EQP03") prefix = "3%";
+        //shelfList: 該当の保管設備の棚の情報をリスト化したもの
+        //例: 設備ID(EQP03)の棚(30101～30203)の情報
+        //incompleteCommandList: 未完了の入庫の搬送指示の情報(搬送指示状態がQUEUED or ACTIVE)
         var (shelfList, incompleteCommandList) = await _repository.SelectShelfInformationAsync(prefix);
 
         if (newCommand.CommandType == 1)
         {
+            //該当の保管設備に入力されたキャリアIDが存在するかまたは未完了の搬送指示の中に入力された
+            //搬送指示が存在するか確認
             bool isCarrierAlreadyStored = shelfList.Any(s => s.StoredCarrierId == newCommand.CarrierId)
                                           || incompleteCommandList.Any(c => c.CarrierId == newCommand.CarrierId);
             if (isCarrierAlreadyStored)
             {
                 throw new HttpRequestException("指定されたキャリアIDは既に入庫されています。", null, HttpStatusCode.BadRequest);
             }
+            //該当の保管設備の棚からキャリアIDがない棚を抽出
+            //未完了の入庫の搬送指示から、該当の保管設備の棚に割り当てられている搬送指示がないかを確認
             var selectedInShelf = shelfList.Where(s => s.StoredCarrierId == null)
                               .FirstOrDefault(s => !incompleteCommandList.Any(c => c.Location == s.ShelfLocation));
             if (selectedInShelf == null)
@@ -118,11 +125,13 @@ public class ShelfSystemService
         }
         else if(newCommand.CommandType == 0)
         {
+            //該当の保管設備の棚からキャリアIDがある棚が存在するか確認
             bool isAllEmpty = shelfList.Any(s => s.StoredCarrierId != null);
             if (!isAllEmpty)
             {
                 throw new HttpRequestException("棚が空のため出庫できません。", null, HttpStatusCode.BadRequest);
             }
+            //該当の保管設備の棚から入力したキャリアIDがある棚を抽出
             var matchedShelf = shelfList.FirstOrDefault(s => s.StoredCarrierId == newCommand.CarrierId);
             if (matchedShelf == null)
             {
@@ -222,7 +231,6 @@ public class ShelfSystemService
             var response = await _httpClient.PostAsJsonAsync($"{url}/api/shelf-system/unload", sendCommand);
             if (response.IsSuccessStatusCode)
             {
-                // コンソールやファイルにログを出力する
                 _logger.LogInformation("[Info] 設備へ払出完了報告成功");
             }
         }
@@ -280,6 +288,7 @@ public class ShelfSystemService
 
     public void RefreshOnlineTimer(string eqpName)
     {
+        //該当の保管設備で10秒タイマーが動いている場合、止めてメモリ解放
         if (_onlineWatchCancell.TryRemove(eqpName, out var oldCts))
         {
             oldCts.Cancel();
@@ -312,6 +321,7 @@ public class ShelfSystemService
                     expiredCts.Dispose();
                 }
             }
+            //保管設備がIDLE状態であれば、OFF-LINEにする。
             var targetEqp = _eqpStateList.First(e => e.EqpName == eqpName);
             if(targetEqp.EquipmentStatus == 0)
             {
