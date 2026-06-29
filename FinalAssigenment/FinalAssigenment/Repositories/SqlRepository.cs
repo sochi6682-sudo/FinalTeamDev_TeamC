@@ -256,7 +256,7 @@ public class SqlRepository
         }
     }
 
-    public async Task<(List<Shelf> ShelfList, List<(string CarrierId, string Location)>)>SelectShelfInformationAsync(string prefix)
+    public async Task<(List<Shelf> ShelfList, List<(string CarrierId, string Location)>)>SelectShelfInformationAsync()
     {
         using (var connection = new SqlConnection(connectionString))
         {
@@ -269,8 +269,7 @@ public class SqlRepository
                       stored_carrier_id AS StoredCarrierId,
                       reservation AS Reservation,
                       storage_at AS StorageAt
-                      FROM shelves
-                      WHERE shelf_location LIKE @Prefix; 
+                      FROM shelves; 
                       --未完了と正常完了の搬送指示のキャリアIDと棚を取得
                       SELECT 
                       carrier_id AS CarrierId,
@@ -278,10 +277,7 @@ public class SqlRepository
                       FROM commands
                       WHERE command_status IN(0,1) AND command_type = 1;";
 
-                using var multi = await connection.QueryMultipleAsync(sql, new
-                {
-                    Prefix = prefix
-                });
+                using var multi = await connection.QueryMultipleAsync(sql);
 
                 var shelfList = (await multi.ReadAsync<Shelf>()).ToList();
                 var incompleteCommandList = (await multi.ReadAsync<(string CarrierId, string Location)>()).ToList();
